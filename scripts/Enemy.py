@@ -1,5 +1,5 @@
 import pygame
-from Main import all_sprites, platforms, enemies
+from spriteGroups import all_sprites, platforms, enemies
 from Player import player
 
 

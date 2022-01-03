@@ -1,5 +1,5 @@
 import pygame
-from Main import all_sprites, platforms
+from spriteGroups import all_sprites, platforms
 
 
 class Platform(pygame.sprite.Sprite):
