@@ -1,4 +1,6 @@
 from math import acos
+from Main import width, height
+from typing import Union
 
 
 class Vector:
@@ -64,3 +66,26 @@ class Vector:
     def angle(self, other):
         cos = (self.scalar_product(other)) / (len(self) * len(other))
         return acos(cos)
+
+    def is_null_vector(self):
+        return self.get_coords() == (0, 0)
+
+    def normalize(self):
+        self.x /= len(self)
+        self.y /= len(self)
+
+    def normalized(self):
+        return Vector(self.x / len(self), self.y / len(self))
+
+
+def convert_coord(point: Union[int, Vector]):
+    """Конвертация координаты из одной плоскости в другую"""
+    return height - point if type(point) == int else Vector(point.x, height-point.y)
+
+
+def movement_by_vector(entity, vector: Vector):
+    pass
+
+
+g = 9.80665
+
