@@ -1,13 +1,20 @@
 import sys
 import os
 import pygame
+from Platform import Platform
 
-FPS = 60
-pygame.init()
-pygame.display.set_caption('Revenge underground')
-width, height = 1920, 1080
+
 screen = pygame.display.set_mode((1920, 1020), pygame.RESIZABLE)
+clock = pygame.time.Clock()
 
+levels = [
+    [
+        "#########################################################################################################################",
+        "..................######################.............##########................############......................########",
+        "#######..............................................###############.........######.....................#################",
+        "@.................######################.................................................................................",
+        "#######################################################################################.....#############################"
+]]
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('sprites', name)
@@ -24,8 +31,14 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
-
-all_sprites = pygame.sprite.Group()
-platforms = pygame.sprite.Group()
-enemies = pygame.sprite.Group()
-clock = pygame.time.Clock()
+def load_level(level):
+    px, py = None, None
+    x, y = None, None
+    levelMap = levels[level]
+    for y in range(len(levelMap)):
+        for x in range(len(levelMap[y])):
+            if levelMap[y][x] == '#':
+                Platform(50 * x, 50 * y, load_image("grass.png"))
+            elif levelMap[y][x] == '@':
+                px, py = 50 * x, 50 * y
+    return px, py
