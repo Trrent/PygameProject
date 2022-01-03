@@ -2,26 +2,31 @@ import sys
 import os
 import pygame
 from Platform import Platform
+from spriteGroups import buttons
 from pathlib import Path
 
+FPS = 60
 screen = pygame.display.set_mode((1920, 1020), pygame.RESIZABLE)
 clock = pygame.time.Clock()
+PATH_HEAD = Path(__file__).parent.parent
+PATH_DATA = Path(PATH_HEAD, 'data')
 
-levels = [
-    [
-        "#########################################################################################################################",
-        "..................######################.............##########................############......................########",
-        "#######..............................................###############.........######.....................#################",
-        "@.................######################.................................................................................",
-        "#######################################################################################.....#############################"
-]]
+
+# levels = [
+#     [
+#         "#########################################################################################################################",
+#         "..................######################.............##########................############......................########",
+#         "#######..............................................###############.........######.....................#################",
+#         "@.................######################.................................................................................",
+#         "#######################################################################################.....#############################"
+# ]]
 
 def load_image(name, colorkey=None):
-    fullname = os.path.join('sprites', name)
-    if not os.path.isfile(fullname):
-        print(f"Файл с изображением '{fullname}' не найден")
-        sys.exit()
-    image = pygame.image.load(fullname)
+    filename = Path(PATH_DATA, 'sprites', name)
+    if not filename.is_file():
+        print(f"Файл с изображением '{name}' не найден")
+        terminate()
+    image = pygame.image.load(filename)
     if colorkey is not None:
         image = image.convert()
     if colorkey == -1:
@@ -31,10 +36,16 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
+
 def load_level(level):
+    filename = Path(PATH_DATA, 'levels', f"level_{level}.txt")
+    if not filename.is_file():
+        print(f"Файл 'level_{level}.txt' не найден")
+        terminate()
+    with open(filename, 'r') as mapFile:
+        levelMap = [line.strip() for line in mapFile]
     px, py = None, None
     x, y = None, None
-    levelMap = levels[level]
     for y in range(len(levelMap)):
         for x in range(len(levelMap[y])):
             if levelMap[y][x] == '#':
@@ -43,41 +54,42 @@ def load_level(level):
                 px, py = 50 * x, 50 * y
     return px, py
 
-def load_font(font_type='Comic_CAT.otf', font_size=30):  # Создание шрифта для текста
-    font_path = Path(Path(__file__).parent.parent, 'data', font_type)
+
+def load_font(font_size, font_type='Comic_CAT.otf'):  # Создание шрифта для текста
+    font_path = Path(PATH_DATA, 'fonts', font_type)
     return pygame.font.Font(font_path, font_size)
 
 
-def printText(message, pos_x, pos_y):  # Вывод текста
-    font = load_font(font_size=40)
-    string_rendered = font.render(message, True, pygame.Color('black'))
+def printText(message, pos_x, pos_y, font_size=30, color='black'):  # Вывод текста
+    font = load_font(font_size=font_size)
+    string_rendered = font.render(message, True, pygame.Color(color))
     intro_rect = string_rendered.get_rect()
-    text_coord = pos_y + 10
-    intro_rect.top = text_coord
-    intro_rect.x = pos_x + 10
-    text_coord += intro_rect.height
+    intro_rect.top = pos_y
+    intro_rect.x = pos_x
     screen.blit(string_rendered, intro_rect)
 
 
-class Button:
-    def __init__(self, width, height, inactive_color, active_color):
-        self.width = width
-        self.height = height
-        self.inactive_color = inactive_color
-        self.active_color = active_color
+class Button(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, width=0, height=0):
+        super().__init__(buttons)
+        self.image = inactive_image
+        self.active_image = active_image
+        self.action = action
+        self.inactive_image = inactive_image
+        self.rect = self.image.get_rect()
+        self.rect.x = pos_x
+        self.rect.y = pos_y
 
-    def draw(self, pos_x, pos_y, message, action=None):
+    def update(self):
         mouse = pygame.mouse.get_pos()
         click = pygame.mouse.get_pressed()
-        if pos_x < mouse[0] < pos_x + self.width and pos_y < mouse[1] < pos_y + self.height:
-            pygame.draw.rect(screen, self.active_color, (pos_x, pos_y, self.width, self.height))
-
-            if click[0] == 1 and action is not None:
-                action()
-
+        if self.rect.collidepoint(mouse):
+            if self.active_image is not None:
+                self.image = self.active_image
+            if click[0] == 1:
+                self.action()
         else:
-            pygame.draw.rect(screen, self.inactive_color, (pos_x, pos_y, self.width, self.height))
-        printText(message, pos_x, pos_y)
+            self.image = self.inactive_image
 
 
 def terminate():
