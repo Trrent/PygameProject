@@ -6,7 +6,7 @@ from collections.abc import Iterable
 class Point:
     def __init__(self, x: float, pg_y: float):
         """
-        Инициализация точки в классической декартовой координатной плоскости (ось ординат направлена вверх)
+        Инициализация точки в плоскости pygame (ось ординат направлена вниз)
         :param x: абсцисса точки в плоскости pygame; float
         :param pg_y: ордината точки в плоскости pygame; float
         """
@@ -22,6 +22,15 @@ class Point:
     def distance_to(self, other):
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
 
+    def upd(self):
+        self.pg_y = height - self.y
+
+    def __str__(self):
+        return f"Point({self.x}, {self.y})"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class Vector:
     def __init__(self, vector_coords: Iterable[int, int] | Iterable[Point, Point]):
@@ -32,10 +41,9 @@ class Vector:
         Иначе расчет: i = конец.x - начало.x, j = конец.y - начало.y
         Iterable[0] = Point1 (начало)
         Iterable[1] = Point2 (конец)
-        :param vector_coords:
         """
         vector_coords = list(vector_coords)
-        if isinstance(vector_coords[0], int):
+        if isinstance(vector_coords[0], int | float):
             self.i, self.j = vector_coords
         else:
             point1, point2 = vector_coords
@@ -109,8 +117,14 @@ class Vector:
         self.j /= self.length()
 
     def normalized(self):
-        return Vector((self.i / self.length(), self.j / self.length()))
+        try:
+            return Vector((self.i / self.length(), self.j / self.length()))
+        except ZeroDivisionError:
+            return Vector((0, 0))
 
 
 def distance(point1: Point, point2: Point):
     return point1.distance_to(point2)
+
+
+g = 9.80665
