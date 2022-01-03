@@ -1,5 +1,5 @@
 from math import acos
-from Main import width, height
+from Main import height
 from typing import Union
 
 
@@ -45,7 +45,7 @@ class Vector:
     def __ne__(self, other):
         return self.x != other.x or self.y != other.y
 
-    def __len__(self):
+    def length(self):
         return (self.x ** 2 + self.y ** 2) ** 0.5
 
     def is_collinear(self, other):
@@ -64,28 +64,20 @@ class Vector:
         return self.scalar_product(other) == 0
 
     def angle(self, other):
-        cos = (self.scalar_product(other)) / (len(self) * len(other))
+        cos = (self.scalar_product(other)) / (self.length() * other.length())
         return acos(cos)
 
     def is_null_vector(self):
         return self.get_coords() == (0, 0)
 
     def normalize(self):
-        self.x /= len(self)
-        self.y /= len(self)
+        self.x /= self.length()
+        self.y /= self.length()
 
     def normalized(self):
-        return Vector(self.x / len(self), self.y / len(self))
+        return Vector(self.x / self.length(), self.y / self.length())
 
 
 def convert_coord(point: Union[int, Vector]):
     """Конвертация координаты из одной плоскости в другую"""
-    return height - point if type(point) == int else Vector(point.x, height-point.y)
-
-
-def movement_by_vector(entity, vector: Vector):
-    pass
-
-
-g = 9.80665
-
+    return height - point if type(point) == int else Vector(point.x, height - point.y)
