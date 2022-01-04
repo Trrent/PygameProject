@@ -3,7 +3,7 @@ from pygame.sprite import Sprite, spritecollide
 from pygame.surface import Surface, SurfaceType
 from pygame.mask import from_surface
 
-from Physics import Point, Vector, g
+from Physics import Point, Vector, g, distance
 from Main import height, platforms
 from typing import Union, Any
 
@@ -52,8 +52,8 @@ class GroundEntity(Entity):
         """
         super().__init__(position, velocity, health, damage, cooldown)
         self.jump_h = jump_height
-        self.jump_vel = (self.jump_h * 2 * g) ** 0.5
-        self.jump_time = self.jump_vel / g
+        self.jump_vel = (self.jump_h * 2 * g) ** 0.5 // 10  # начальная скорость прыжка
+        self.jump_time = self.jump_vel / g  # время подъема до максимальной высоты
         self.jumped = False
         self.grounded = False
         self.mov_dir = Vector((0, 0))
@@ -62,8 +62,24 @@ class GroundEntity(Entity):
         self.jump_start = None
         self.fall_start = None
 
-    def move_to(self, point):
-        self.end_pos = Point(point[0], point[1])
+    def move_to(self, point: tuple | Point, immediately=False):
+        if type(point) == tuple:
+            self.end_pos = Point(point[0], point[1])
+        else:
+            self.end_pos = point.copy()
+        if immediately:
+            self.pos = self.end_pos.copy()
+
+    def move(self, direction: Vector, immediately=False):
+        if immediately:
+            self.pos.x += direction.i
+            self.pos.y += direction.j
+            self.pos.upd()
+        else:
+            self.end_pos = self.pos.copy()
+            self.end_pos.x += direction.i
+            self.end_pos.y += direction.j
+            self.end_pos.upd()
 
     def calculate_mov_dir(self):
         self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
@@ -77,8 +93,9 @@ class GroundEntity(Entity):
                 self.mov_dir.j += vy
             else:
                 self.jumped = False
+                self.jump_start = None
                 self.fall_start = time()
-        if not (self.grounded or self.jumped):
+        if not self.grounded and not self.jumped:
             if self.fall_start is None:
                 self.fall_start = time()
             t = time() - self.fall_start
@@ -108,10 +125,13 @@ class ExampleEnemy(GroundEntity, Enemy):
         else:
             dt = time() - self.last_call
         self.calculate_mov_dir()
-        dt = 1
+        dt = 0.9
         self.pos.x += dt * self.mov_dir.i * self.vel / (2 * self.vel) ** 0.5
         self.pos.y += dt * self.mov_dir.j * self.vel / (2 * self.vel) ** 0.5
         self.pos.upd()
 
         self.rect.x = self.pos.x
         self.rect.y = self.pos.pg_y
+
+        if 0 < distance(self.pos, self.end_pos) <= 1:
+            self.pos = self.end_pos.copy()
