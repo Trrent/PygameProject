@@ -25,15 +25,24 @@ class Point:
     def upd(self):
         self.pg_y = height - self.y
 
+    def copy(self):
+        return Point(self.x, self.pg_y)
+
     def __str__(self):
-        return f"Point({self.x}, {self.y})"
+        return f"Point({round(self.x, 2)}, {round(self.y, 2)})"
 
     def __repr__(self):
         return self.__str__()
 
+    def __eq__(self, other):
+        return self.classic() == other.classic()
+
+    def __ne__(self, other):
+        return self.classic() != other.classic()
+
 
 class Vector:
-    def __init__(self, vector_coords: Iterable[int, int] | Iterable[Point, Point]):
+    def __init__(self, vector_coords: Iterable[float, float] | Iterable[Point, Point]):
         """
         Представляет вектор в классической декартовой координатной плоскости.
         Если isinstance(vector_coords, Iterable), то подразумевается исходная соотнесённость с классической декартовой
@@ -128,3 +137,8 @@ def distance(point1: Point, point2: Point):
 
 
 g = 9.80665
+RIGHT = Vector((1, 0))
+UP = Vector((0, 1))
+LEFT = Vector((-1, 0))
+DOWN = Vector((0, -1))
+
