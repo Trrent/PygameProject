@@ -27,13 +27,15 @@ def start_screen():
 
 def level_screen():
     # bg = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+    buttons.empty()
+    screen.fill((0, 0, 0))
     levelBtnImage = load_image('level1_btn.png')
     levelBtnPressedImage = load_image('level1_btn_pressed.png')
-    Button(250, 200, terminate, levelBtnImage, active_image=levelBtnPressedImage)
-    Button(400, 200, terminate, levelBtnImage, active_image=levelBtnPressedImage)
-    Button(550, 200, terminate, levelBtnImage, active_image=levelBtnPressedImage)
-    Button(700, 200, terminate, levelBtnImage, active_image=levelBtnPressedImage)
-    Button(850, 200, terminate, levelBtnImage, active_image=levelBtnPressedImage)
+    Button(450, 300, lambda lvl = 1: start(lvl), levelBtnImage, active_image=levelBtnPressedImage)
+    Button(600, 300, lambda lvl = 2: start(lvl), levelBtnImage, active_image=levelBtnPressedImage)
+    Button(750, 300, lambda lvl = 3: start(lvl), levelBtnImage, active_image=levelBtnPressedImage)
+    Button(900, 300, lambda lvl = 4: start(lvl), levelBtnImage, active_image=levelBtnPressedImage)
+    Button(1050, 300, lambda lvl = 5: start(lvl), levelBtnImage, active_image=levelBtnPressedImage)
 
     while True:
         for event in pygame.event.get():
@@ -49,9 +51,9 @@ def death_screen():
     pass
 
 
-def start():
+def start(level):
     camera = Camera()
-    player.rect.x, player.rect.y = load_level(3)
+    player.rect.x, player.rect.y = load_level(level)
     while True:
         screen.fill((0, 0, 0))
         all_sprites.draw(screen)
