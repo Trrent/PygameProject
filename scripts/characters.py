@@ -103,11 +103,11 @@ class GroundEntity(Entity):
             self.mov_dir.j += vy
 
 
-class Enemy(Sprite):
+class Hero(Sprite):
     pass
 
 
-class ExampleEnemy(GroundEntity, Enemy):
+class ExampleController(GroundEntity, Hero):
     def __init__(self, position: Point, image: Surface | SurfaceType, velocity=10.0, health=100.0, damage=10.0, cooldown=2.0,
                  jump_height=100.0):
         super().__init__(position, velocity, health, damage, cooldown, jump_height)
