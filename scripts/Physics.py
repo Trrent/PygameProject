@@ -122,8 +122,11 @@ class Vector:
         return self.get_coords() == (0, 0)
 
     def normalize(self):
-        self.i /= self.length()
-        self.j /= self.length()
+        try:
+            self.i /= self.length()
+            self.j /= self.length()
+        except ZeroDivisionError:
+            pass
 
     def normalized(self):
         try:
