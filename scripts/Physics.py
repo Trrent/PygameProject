@@ -1,6 +1,6 @@
 from math import acos
-from Main import height
 from collections.abc import Iterable
+from Parameters import HEIGHT
 
 
 class Point:
@@ -10,7 +10,7 @@ class Point:
         :param x: абсцисса точки в плоскости pygame; float
         :param pg_y: ордината точки в плоскости pygame; float
         """
-        self.x, self.y = x, height - pg_y
+        self.x, self.y = x, HEIGHT - pg_y
         self.pg_y = pg_y
 
     def classic(self):
@@ -23,7 +23,7 @@ class Point:
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
 
     def upd(self):
-        self.pg_y = height - self.y
+        self.pg_y = HEIGHT - self.y
 
     def copy(self):
         return Point(self.x, self.pg_y)
@@ -141,4 +141,3 @@ RIGHT = Vector((1, 0))
 UP = Vector((0, 1))
 LEFT = Vector((-1, 0))
 DOWN = Vector((0, -1))
-
