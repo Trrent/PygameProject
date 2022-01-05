@@ -60,8 +60,75 @@ class Player(GroundEntity, Friend):
     def __init__(self, pos: Point, image: Surface | SurfaceType, hor_vel=3, health=100, damage=20, cooldown=1,
                  jump_height=70):
         super().__init__(pos, hor_vel, health, damage, cooldown, jump_height)
-        Friend.__init__(all_sprites)
+        Friend.__init__(self, all_sprites)
         self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.pg_y
+        self.mask = from_surface(self.image)
+
+    def calc_mov_dir(self):
+        self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
+        vy = 0
+        if self.jumped:
+            if self.jump_start is None:
+                self.jump_start = time()
+            t = time() - self.jump_start
+            if t < self.jump_t:
+                vy = self.jump_v0y - g * t
+            else:
+                self.jumped = False
+                self.jump_start = None
+        if not (self.jumped or self.grounded):
+            if self.fall_start is None:
+                self.fall_start = time()
+            t = time() - self.fall_start
+            vy = -g * t
+
+        if not self.grounded:
+            self.rect.y += 1
+            self.grounded = spritecollideany(self, platforms)
+            self.rect.y -= 1
+
+        if self.grounded:
+            vy = 0
+            self.fall_start = None
+            self.jump_start = None
+            self.jumped = False
+
+        collides = spritecollide(self, platforms, False)
+        for collide in collides:
+            if self.mov_dir.i > 0:
+                self.rect.right = collide.rect.left
+                self.mov_dir.i = 0
+            if self.mov_dir.i < 0:
+                self.rect.left = collide.rect.right
+                self.mov_dir.i = 0
+        self.mov_dir.j += vy
+        #self.mov_dir.normalize()
+
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        self.pos.x = self.rect.x
+        self.pos.y = self.rect.y
+        self.pos.upd()
+
+        self.calc_mov_dir()
+        self.mov_dir = Vector((0, 0))
+        self.pos.x += self.mov_dir.i * self.vel / (self.vel * 2) ** 0.5
+        self.pos.y += self.mov_dir.j * self.vel / (self.vel * 2) ** 0.5
+        self.pos.upd()
+
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.pg_y
+
+
+class Skeleton(GroundEntity, Enemy):
+    def __init__(self, pos: Point, image: Surface | SurfaceType, player: Player, hor_vel=3, health=100, damage=20, cooldown=1,
+                 jump_height=70):
+        super().__init__(pos, hor_vel, health, damage, cooldown, jump_height)
+        Enemy.__init__(self, all_sprites)
+        self.image = image
+        self.player = player
         self.rect = self.image.get_rect()
         self.rect.x = self.pos.x
         self.rect.y = self.pos.pg_y
@@ -106,7 +173,16 @@ class Player(GroundEntity, Friend):
         self.mov_dir.j += vy
         self.mov_dir.normalize()
 
+    def correct_trajectory(self):
+        if distance(self.pos, self.player.pos) <= 10:
+            self.end_pos = self.player.pos.copy()
+
     def update(self, *args: Any, **kwargs: Any) -> None:
+        self.correct_trajectory()
         self.calc_mov_dir()
         self.pos.x += self.mov_dir.i * self.vel / (self.vel * 2) ** 0.5
         self.pos.y += self.mov_dir.j * self.vel / (self.vel * 2) ** 0.5
+        self.pos.upd()
+
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.pg_y
