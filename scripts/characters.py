@@ -1,137 +1,112 @@
 from time import time
-from pygame.sprite import Sprite, spritecollide
+from typing import Any
+
+from pygame.sprite import Sprite, spritecollideany, spritecollide
 from pygame.surface import Surface, SurfaceType
 from pygame.mask import from_surface
 
-from Physics import Point, Vector, g, distance
-from Main import height, platforms
-from typing import Union, Any
+from Physics import *
+from spriteGroups import all_sprites, platforms
 
 
 class Entity:
-    def __init__(self, position: Point, velocity: float, health: float, damage: float, cooldown: float):
-        """
-        Базовый класс сущности
-        :param position: начальная позиция; Point
-        :param velocity: собственная скорость; float
-        :param health: максимальное здоровье; float
-        :param damage: собственный урон; float
-        :param cooldown: промежуток времени между повторным ударом; float
-        """
-        self.pos = position
-        self.vel = velocity
+    def __init__(self, pos: Point, hor_vel: float, health: int, damage: int, cooldown: float):
+        self.pos = pos.copy()
+        self.vel = hor_vel
         self.hp = health
         self.damage = damage
         self.cooldown = cooldown
 
-        self.last_hit = time()
-
-    def try_hit(self, entity):
-        if not issubclass(entity, Entity):
-            raise Exception("Не понятно как ударить не наследника Entity")
-        if self.last_hit + self.cooldown > time():
-            return None
-        # TODO обработка события "нанесен удар"
-        self.last_hit = time()
-
-    def take_damage(self, damage):
-        pass
-        # TODO обработка события "получен урон"
+        self.mov_dir = Vector((0, 0))
+        self.end_pos = self.pos.copy()
 
 
 class GroundEntity(Entity):
-    def __init__(self, position: Point, velocity: float, health: float, damage: float, cooldown: float, jump_height: float):
-        """
-        Базовый класс наземной сущности
-        :param position: начальная позиция; Point
-        :param velocity: собственная скорость; float
-        :param health: максимальное здоровье; float
-        :param damage: собственный урон; float
-        :param cooldown: промежуток времени между повторным ударом; float
-        :param jump_height: максимальная высота прыжка в пикселях; float
-        """
-        super().__init__(position, velocity, health, damage, cooldown)
-        self.jump_h = jump_height
-        self.jump_vel = (self.jump_h * 2 * g) ** 0.5 // 10  # начальная скорость прыжка
-        self.jump_time = self.jump_vel / g  # время подъема до максимальной высоты
-        self.jumped = False
-        self.grounded = False
-        self.mov_dir = Vector((0, 0))
+    def __init__(self, pos: Point, hor_vel: float, health: int, damage: int, cooldown: float, jump_height: float):
+        super().__init__(pos, hor_vel, health, damage, cooldown)
 
-        self.end_pos = self.pos
+        self.jump_h = jump_height  # максимальная высота подъема
+        self.jump_v0y = (self.jump_h * 2 * g) ** 0.5  # начальная скорость v0 = sqrt(hмакс * 2g)
+        self.jump_t = self.jump_v0y / g  # tподъем = v0 / g
         self.jump_start = None
-        self.fall_start = None
+        self.jumped = False
 
-    def move_to(self, point: tuple | Point, immediately=False):
-        if type(point) == tuple:
-            self.end_pos = Point(point[0], point[1])
-        else:
-            self.end_pos = point.copy()
+        self.fall_start = False
+        self.grounded = False
+
+    def move(self, direction: Vector, immediately=False):
+        self.end_pos = self.pos.copy()
+        self.end_pos.x += direction.i
+        self.end_pos.y += direction.j
+        self.end_pos.upd()
         if immediately:
             self.pos = self.end_pos.copy()
 
-    def move(self, direction: Vector, immediately=False):
+    def move_to(self, pos: Point | tuple, immediately=False):
+        self.end_pos = pos.copy() if type(pos) == pos else Point(pos[0], pos[1])
         if immediately:
-            self.pos.x += direction.i
-            self.pos.y += direction.j
-            self.pos.upd()
-        else:
-            self.end_pos = self.pos.copy()
-            self.end_pos.x += direction.i
-            self.end_pos.y += direction.j
-            self.end_pos.upd()
+            self.pos = self.end_pos.copy()
 
-    def calculate_mov_dir(self):
-        self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
+
+class Friend(Sprite):
+    pass
+
+
+class Enemy(Sprite):
+    pass
+
+
+class Player(GroundEntity, Friend):
+    def __init__(self, pos: Point, image: Surface | SurfaceType, hor_vel=3, health=100, damage=20, cooldown=1,
+                 jump_height=70):
+        super().__init__(pos, hor_vel, health, damage, cooldown, jump_height)
+        Friend.__init__(all_sprites)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.pg_y
+        self.mask = from_surface(self.image)
+
+    def calc_mov_dir(self):
+        self.mov_dir = Vector((self.pos, self.end_pos))
+        vy = 0
         if self.jumped:
             if self.jump_start is None:
-                self.grounded = False
                 self.jump_start = time()
             t = time() - self.jump_start
-            if t < self.jump_time:
-                vy = self.jump_vel - g * t
-                self.mov_dir.j += vy
+            if t < self.jump_t:
+                vy = self.jump_v0y - g * t
             else:
                 self.jumped = False
                 self.jump_start = None
-                self.fall_start = time()
-        if not self.grounded and not self.jumped:
+        if not (self.jumped or self.grounded):
             if self.fall_start is None:
                 self.fall_start = time()
             t = time() - self.fall_start
             vy = -g * t
-            self.mov_dir.j += vy
 
+        if not self.grounded:
+            self.rect.y += 1
+            self.grounded = spritecollideany(self, platforms)
+            self.rect.y -= 1
 
-class Hero(Sprite):
-    pass
+        if self.grounded:
+            self.mov_dir.j = 0
+            self.fall_start = None
+            self.jump_start = None
+            self.jumped = False
 
-
-class ExampleController(GroundEntity, Hero):
-    def __init__(self, position: Point, image: Surface | SurfaceType, velocity=10.0, health=100.0, damage=10.0, cooldown=2.0,
-                 jump_height=100.0):
-        super().__init__(position, velocity, health, damage, cooldown, jump_height)
-        Sprite.__init__(self)
-
-        self.image = image
-        self.rect = self.image.get_rect()
-        self.mask = from_surface(self.image)
-
-        self.last_call = None
+        collides = spritecollide(self, platforms, False)
+        for collide in collides:
+            if self.mov_dir.i > 0:
+                self.rect.right = collide.rect.left
+            if self.mov_dir.i < 0:
+                self.rect.left = collide.rect.right
+            self.mov_dir.i = 0
+        self.mov_dir.j += vy
+        self.mov_dir.normalize()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        if self.last_call is None:
-            dt = 0.015
-        else:
-            dt = time() - self.last_call
-        self.calculate_mov_dir()
-        dt = 0.9
-        self.pos.x += dt * self.mov_dir.i * self.vel / (2 * self.vel) ** 0.5
-        self.pos.y += dt * self.mov_dir.j * self.vel / (2 * self.vel) ** 0.5
-        self.pos.upd()
-
-        self.rect.x = self.pos.x
-        self.rect.y = self.pos.pg_y
-
-        if 0 < distance(self.pos, self.end_pos) <= 1:
-            self.pos = self.end_pos.copy()
+        self.calc_mov_dir()
+        self.pos.x += self.mov_dir.i * self.vel / (self.vel * 2) ** 0.5
+        self.pos.y += self.mov_dir.j * self.vel / (self.vel * 2) ** 0.5
