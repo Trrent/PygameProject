@@ -6,7 +6,8 @@ from spriteGroups import buttons
 from pathlib import Path
 
 FPS = 60
-screen = pygame.display.set_mode((1920, 1020), pygame.RESIZABLE)
+WIDTH, HEIGHT = 1920, 1020
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 PATH_HEAD = Path(__file__).parent.parent
 PATH_DATA = Path(PATH_HEAD, 'data')
@@ -80,14 +81,19 @@ class Button(pygame.sprite.Sprite):
         self.rect.x = pos_x
         self.rect.y = pos_y
 
-    def update(self):
+    def is_pressed(self):
         mouse = pygame.mouse.get_pos()
         click = pygame.mouse.get_pressed()
         if self.rect.collidepoint(mouse):
+            if click[0]:
+                return True
+        return False
+
+    def update(self):
+        mouse = pygame.mouse.get_pos()
+        if self.rect.collidepoint(mouse):
             if self.active_image is not None:
                 self.image = self.active_image
-            if click[0] == 1:
-                self.action()
         else:
             self.image = self.inactive_image
 
