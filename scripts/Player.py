@@ -11,9 +11,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = pos_x
         self.rect.y = pos_y
         self.mask = pygame.mask.from_surface(self.image)
-        self.initParam()
-
-    def initParam(self):
         self.vx, self.vy = 0, 0  # скорость по x и по y
         self.grounded = False
         self.hp = 100
@@ -61,8 +58,8 @@ class Player(pygame.sprite.Sprite):
 
 
 class HealthBar(pygame.sprite.Sprite):
-    def __init__(self, player):
-        super().__init__()
+    def __init__(self, player, group=all_sprites):
+        super().__init__(group)
         self.player = player
         self.image = pygame.transform.scale(load_image('hp_bar.png'), (102, 40))
         self.rect = self.image.get_rect()
@@ -74,5 +71,5 @@ class HealthBar(pygame.sprite.Sprite):
         pass
 
 
-player = Player(100, 100, load_image("player.png"))
-hpBar = HealthBar(player)
+# player = Player(100, 100, load_image("player.png"))
+# hpBar = HealthBar(player)

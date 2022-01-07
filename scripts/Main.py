@@ -38,7 +38,7 @@ def load_image(name, colorkey=None):
     return image
 
 
-def load_level(level):
+def load_level(level, group):
     filename = Path(PATH_DATA, 'levels', f"level_{level}.txt")
     if not filename.is_file():
         print(f"Файл 'level_{level}.txt' не найден")
@@ -50,9 +50,9 @@ def load_level(level):
     for y in range(len(levelMap)):
         for x in range(len(levelMap[y])):
             if levelMap[y][x] == '#':
-                Platform(50 * x, 50 * y, load_image("grass.png"))
+                Platform(50 * x, 50 * y + 300, load_image("grass.png"), group)
             elif levelMap[y][x] == '@':
-                px, py = 50 * x, 50 * y
+                px, py = 50 * x, 50 * y + 300
     return px, py
 
 
@@ -71,8 +71,8 @@ def printText(message, pos_x, pos_y, font_size=30, color='black'):  # Вывод
 
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, width=0, height=0):
-        super().__init__(buttons)
+    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons, width=0, height=0):
+        super().__init__(group)
         self.image = inactive_image
         self.active_image = active_image
         self.action = action
@@ -90,6 +90,7 @@ class Button(pygame.sprite.Sprite):
         return False
 
     def update(self):
+
         mouse = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse):
             if self.active_image is not None:
