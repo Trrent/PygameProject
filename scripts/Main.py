@@ -1,8 +1,9 @@
 import sys
 import os
+from Parameters import *
 import pygame
 from Platform import Platform
-from spriteGroups import buttons
+from spriteGroups import buttons, all_sprites
 from pathlib import Path
 
 FPS = 60
@@ -90,13 +91,26 @@ class Button(pygame.sprite.Sprite):
         return False
 
     def update(self):
-
         mouse = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse):
             if self.active_image is not None:
                 self.image = self.active_image
         else:
             self.image = self.inactive_image
+
+
+class HealthBar(pygame.sprite.Sprite):
+    def __init__(self, player, group=all_sprites):
+        super().__init__(group)
+        self.player = player
+        self.image = pygame.transform.scale(load_image('hp_bar.png'), (102, 40))
+        self.rect = self.image.get_rect()
+
+        self.rect.x = -300
+        self.rect.y = 30
+
+    def update(self):
+        pass
 
 
 def terminate():
