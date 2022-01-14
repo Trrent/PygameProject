@@ -73,16 +73,13 @@ class StartLevel:
     def __init__(self, level):
         self.image = pygame.Surface((WIDTH, HEIGHT))
         self.camera = Camera()
-        self.platforms = pygame.sprite.Group()
-        self.all_sprites = pygame.sprite.Group()
-        self.enemies = pygame.sprite.Group()
         self.buttons = pygame.sprite.Group()
         self.ui = pygame.sprite.Group()
         self.pauseScreen = PauseScreen(level)
         self.deathScreen = DeathScreen(level)
         self.level = level
-        px, py = load_level(level, [self.all_sprites, self.platforms])
-        self.player = Player(Physics.Point(px, py), load_image("player.png"), self.all_sprites)
+        px, py = load_level(level, [all_sprites, platforms])
+        self.player = Player(Physics.Point(px, py), load_image("player.png"))
         self.hpBar = HealthBar(self.player, group=self.ui)
         Button(1700, 40, self.pauseScreen.show, pauseBtnImage,
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
@@ -90,15 +87,15 @@ class StartLevel:
     def run(self):
         while True:
             self.image.fill((0, 50, 0))
-            self.all_sprites.draw(self.image)
-            self.all_sprites.update()
+            all_sprites.draw(self.image)
+            all_sprites.update()
             self.ui.draw(self.image)
             self.ui.update()
             for b in self.buttons:
                 if b.is_pressed():
                     b.action()
             self.camera.update(self.player)
-            for sprite in self.all_sprites:
+            for sprite in all_sprites:
                 self.camera.apply(sprite)
             if self.player.hp <= 0:
                 return self.deathScreen.show()

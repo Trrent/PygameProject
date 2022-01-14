@@ -6,8 +6,7 @@ from Platform import Platform
 from spriteGroups import buttons, all_sprites
 from pathlib import Path
 
-FPS = 60
-WIDTH, HEIGHT = 1920, 1020
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 PATH_HEAD = Path(__file__).parent.parent
