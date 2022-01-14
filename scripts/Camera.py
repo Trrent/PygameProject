@@ -1,3 +1,6 @@
+from Parameters import WIDTH
+
+
 class Camera:
     def __init__(self):
         self.dx = 0
@@ -6,4 +9,4 @@ class Camera:
         obj.rect.x += self.dx
 
     def update(self, target):
-        self.dx = -(target.rect.x + target.rect.w // 2 - 1920 // 2)
+        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)

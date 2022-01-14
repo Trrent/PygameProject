@@ -1,12 +1,12 @@
 import sys
 import os
+from Parameters import *
 import pygame
 from Platform import Platform
-from spriteGroups import buttons
+from spriteGroups import buttons, all_sprites
 from pathlib import Path
 
-FPS = 60
-WIDTH, HEIGHT = 1920, 1020
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 PATH_HEAD = Path(__file__).parent.parent
@@ -50,9 +50,9 @@ def load_level(level, group):
     for y in range(len(levelMap)):
         for x in range(len(levelMap[y])):
             if levelMap[y][x] == '#':
-                Platform(50 * x, 50 * y + 300, load_image("grass.png"), group)
+                Platform(40 * x, 40 * y + 300, load_image("grass.png"), group)
             elif levelMap[y][x] == '@':
-                px, py = 50 * x, 50 * y + 300
+                px, py = 40 * x, 40 * y + 300
     return px, py
 
 
@@ -90,13 +90,26 @@ class Button(pygame.sprite.Sprite):
         return False
 
     def update(self):
-
         mouse = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse):
             if self.active_image is not None:
                 self.image = self.active_image
         else:
             self.image = self.inactive_image
+
+
+class HealthBar(pygame.sprite.Sprite):
+    def __init__(self, player, group=all_sprites):
+        super().__init__(group)
+        self.player = player
+        self.image = pygame.transform.scale(load_image('hp_bar.png'), (102, 40))
+        self.rect = self.image.get_rect()
+
+        self.rect.x = -300
+        self.rect.y = 30
+
+    def update(self):
+        pass
 
 
 def terminate():
