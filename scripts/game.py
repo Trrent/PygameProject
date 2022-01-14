@@ -1,6 +1,8 @@
 import pygame
-import Physics
-# from characters import Player
+
+# from Player import Player, HealthBar
+from Platform import Platform
+# from Enemy import Enemy
 from Main import *
 from Camera import Camera
 from spriteGroups import all_sprites, buttons, platforms, enemies
@@ -88,9 +90,10 @@ class StartLevel:
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
 
     def run(self):
-        iterations = 0
         while True:
             self.image.fill((0, 50, 0))
+            self.all_sprites.draw(self.image)
+            self.all_sprites.update()
             self.ui.draw(self.image)
             self.ui.update()
             self.all_sprites.draw(self.image)
