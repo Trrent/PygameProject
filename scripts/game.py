@@ -108,6 +108,7 @@ class StartLevel:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_w or event.key == pygame.K_SPACE:
                         self.player.move(Physics.UP)
+                        self.player.jumped = True
                     if event.key == pygame.K_d:
                         self.player.move(Physics.RIGHT)
                     if event.key == pygame.K_a:

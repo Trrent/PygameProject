@@ -26,12 +26,12 @@ class GroundEntity(Entity):
         super().__init__(pos, hor_vel, health, damage, cooldown)
 
         self.jump_h = jump_height  # максимальная высота подъема
-        self.jump_v0y = (self.jump_h * 2 * g) ** 0.5  # начальная скорость v0 = sqrt(hмакс * 2g)
+        self.jump_v0y = (self.jump_h * 2 * g) ** 0.5 // 6  # начальная скорость v0 = sqrt(hмакс * 2g)
         self.jump_t = self.jump_v0y / g  # tподъем = v0 / g
         self.jump_start = None
         self.jumped = False
 
-        self.fall_start = False
+        self.fall_start = None
         self.grounded = False
 
     def move(self, direction: Vector, immediately=False):
@@ -76,7 +76,7 @@ class Enemy(Sprite):
 
 
 class Player(GroundEntity, Friend):
-    def __init__(self, pos: Point, image: Surface | SurfaceType, hor_vel=3, health=100, damage=20, cooldown=1,
+    def __init__(self, pos: Point, image: Surface | SurfaceType, hor_vel=10, health=100, damage=20, cooldown=1,
                  jump_height=70):
         super().__init__(pos, hor_vel, health, damage, cooldown, jump_height)
         Friend.__init__(self, all_sprites)
@@ -86,45 +86,51 @@ class Player(GroundEntity, Friend):
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
 
+    def check_collides(self):
+        self.rect.y += 1
+        collides = spritecollideany(self, platforms)
+        self.rect.y -= 1
+        self.grounded = False if collides is None else True
+
+    def calc_jump(self):
+        if self.jump_start is None:
+            self.grounded = False
+            self.jump_start = time()
+        t = time() - self.jump_start
+        if t > self.jump_t:
+            self.jumped = False
+            self.jump_start = None
+            return 0
+        return self.jump_v0y - g * t
+
+    def calc_fall(self):
+        if self.fall_start is None:
+            self.fall_start = time()
+        t = time() - self.fall_start
+        return -g * t
+
     def calc_mov_dir(self):
         self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
+        self.check_collides()
         vy = 0
         if self.jumped:
-            if self.jump_start is None:
-                self.jump_start = time()
-            t = time() - self.jump_start
-            if t < self.jump_t:
-                vy = self.jump_v0y - g * t
-            else:
-                self.jumped = False
-                self.jump_start = None
-        if not (self.jumped or self.grounded):
-            if self.fall_start is None:
-                self.fall_start = time()
-            t = time() - self.fall_start
-            vy = -g * t
+            vy = self.calc_jump()
 
-        if not self.grounded:
-            self.rect.y += 1
-            self.grounded = spritecollideany(self, platforms)
-            self.rect.y -= 1
+        if not self.jumped and not self.grounded:
+            vy = self.calc_fall()
 
         if self.grounded:
-            vy = 0
+            self.mov_dir.j = 0
             self.fall_start = None
-            self.jump_start = None
-            self.jumped = False
 
         collides = spritecollide(self, platforms, False)
         for collide in collides:
             if self.mov_dir.i > 0:
                 self.rect.right = collide.rect.left
-                self.mov_dir.i = 0
             if self.mov_dir.i < 0:
                 self.rect.left = collide.rect.right
-                self.mov_dir.i = 0
+            self.mov_dir.i = 0
         self.mov_dir.j += vy
-        # self.mov_dir.normalize()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         self.pos.x = self.rect.x
@@ -132,7 +138,6 @@ class Player(GroundEntity, Friend):
         self.pos.upd()
 
         self.calc_mov_dir()
-        self.mov_dir = Vector((0, 0))
         self.pos.x += self.mov_dir.i * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
         self.pos.y += self.mov_dir.j * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
         self.pos.upd()
@@ -156,34 +161,46 @@ class Skeleton(GroundEntity, Enemy):
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
 
+    def correct_trajectory(self):
+        if distance(self.pos, self.player.pos) <= 10:
+            self.end_pos = self.player.pos.copy()
+
+    def check_collides(self):
+        self.rect.y += 1
+        collides = spritecollideany(self, platforms)
+        self.rect.y -= 1
+        self.grounded = False if collides is None else True
+
+    def calc_jump(self):
+        if self.jump_start is None:
+            self.grounded = False
+            self.jump_start = time()
+        t = time() - self.jump_start
+        if t > self.jump_t:
+            self.jumped = False
+            self.jump_start = None
+            return 0
+        return self.jump_v0y - g * t
+
+    def calc_fall(self):
+        if self.fall_start is None:
+            self.fall_start = time()
+        t = time() - self.fall_start
+        return -g * t
+
     def calc_mov_dir(self):
-        self.mov_dir = Vector((self.pos, self.end_pos))
+        self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
+        self.check_collides()
         vy = 0
         if self.jumped:
-            if self.jump_start is None:
-                self.jump_start = time()
-            t = time() - self.jump_start
-            if t < self.jump_t:
-                vy = self.jump_v0y - g * t
-            else:
-                self.jumped = False
-                self.jump_start = None
-        if not (self.jumped or self.grounded):
-            if self.fall_start is None:
-                self.fall_start = time()
-            t = time() - self.fall_start
-            vy = -g * t
+            vy = self.calc_jump()
 
-        if not self.grounded:
-            self.rect.y += 1
-            self.grounded = spritecollideany(self, platforms)
-            self.rect.y -= 1
+        if not self.jumped and not self.grounded:
+            vy = self.calc_fall()
 
         if self.grounded:
             self.mov_dir.j = 0
             self.fall_start = None
-            self.jump_start = None
-            self.jumped = False
 
         collides = spritecollide(self, platforms, False)
         for collide in collides:
@@ -193,14 +210,12 @@ class Skeleton(GroundEntity, Enemy):
                 self.rect.left = collide.rect.right
             self.mov_dir.i = 0
         self.mov_dir.j += vy
-        self.mov_dir.normalize()
-
-    def correct_trajectory(self):
-        if distance(self.pos, self.player.pos) <= 10:
-            self.end_pos = self.player.pos.copy()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        self.correct_trajectory()
+        self.pos.x = self.rect.x
+        self.pos.pg_y = self.rect.y
+        self.pos.upd()
+
         self.calc_mov_dir()
         self.pos.x += self.mov_dir.i * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
         self.pos.y += self.mov_dir.j * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
@@ -269,34 +284,46 @@ class FireSpirit(GroundEntity, Enemy):
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
 
+    def correct_trajectory(self):
+        if distance(self.pos, self.player.pos) <= 10:
+            self.end_pos = self.player.pos.copy()
+
+    def check_collides(self):
+        self.rect.y += 1
+        collides = spritecollideany(self, platforms)
+        self.rect.y -= 1
+        self.grounded = False if collides is None else True
+
+    def calc_jump(self):
+        if self.jump_start is None:
+            self.grounded = False
+            self.jump_start = time()
+        t = time() - self.jump_start
+        if t > self.jump_t:
+            self.jumped = False
+            self.jump_start = None
+            return 0
+        return self.jump_v0y - g * t
+
+    def calc_fall(self):
+        if self.fall_start is None:
+            self.fall_start = time()
+        t = time() - self.fall_start
+        return -g * t
+
     def calc_mov_dir(self):
-        self.mov_dir = Vector((self.pos, self.end_pos))
+        self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
+        self.check_collides()
         vy = 0
         if self.jumped:
-            if self.jump_start is None:
-                self.jump_start = time()
-            t = time() - self.jump_start
-            if t < self.jump_t:
-                vy = self.jump_v0y - g * t
-            else:
-                self.jumped = False
-                self.jump_start = None
-        if not (self.jumped or self.grounded):
-            if self.fall_start is None:
-                self.fall_start = time()
-            t = time() - self.fall_start
-            vy = -g * t
+            vy = self.calc_jump()
 
-        if not self.grounded:
-            self.rect.y += 1
-            self.grounded = spritecollideany(self, platforms)
-            self.rect.y -= 1
+        if not self.jumped and not self.grounded:
+            vy = self.calc_fall()
 
         if self.grounded:
             self.mov_dir.j = 0
             self.fall_start = None
-            self.jump_start = None
-            self.jumped = False
 
         collides = spritecollide(self, platforms, False)
         for collide in collides:
@@ -306,14 +333,12 @@ class FireSpirit(GroundEntity, Enemy):
                 self.rect.left = collide.rect.right
             self.mov_dir.i = 0
         self.mov_dir.j += vy
-        self.mov_dir.normalize()
-
-    def correct_trajectory(self):
-        if distance(self.pos, self.player.pos) <= 10:
-            self.end_pos = self.player.pos.copy()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        self.correct_trajectory()
+        self.pos.x = self.rect.x
+        self.pos.pg_y = self.rect.y
+        self.pos.upd()
+
         self.calc_mov_dir()
         self.pos.x += self.mov_dir.i * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
         self.pos.y += self.mov_dir.j * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
@@ -338,34 +363,46 @@ class Slime(GroundEntity, Enemy):
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
 
+    def correct_trajectory(self):
+        if distance(self.pos, self.player.pos) <= 10:
+            self.end_pos = self.player.pos.copy()
+
+    def check_collides(self):
+        self.rect.y += 1
+        collides = spritecollideany(self, platforms)
+        self.rect.y -= 1
+        self.grounded = False if collides is None else True
+
+    def calc_jump(self):
+        if self.jump_start is None:
+            self.grounded = False
+            self.jump_start = time()
+        t = time() - self.jump_start
+        if t > self.jump_t:
+            self.jumped = False
+            self.jump_start = None
+            return 0
+        return self.jump_v0y - g * t
+
+    def calc_fall(self):
+        if self.fall_start is None:
+            self.fall_start = time()
+        t = time() - self.fall_start
+        return -g * t
+
     def calc_mov_dir(self):
-        self.mov_dir = Vector((self.pos, self.end_pos))
+        self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
+        self.check_collides()
         vy = 0
         if self.jumped:
-            if self.jump_start is None:
-                self.jump_start = time()
-            t = time() - self.jump_start
-            if t < self.jump_t:
-                vy = self.jump_v0y - g * t
-            else:
-                self.jumped = False
-                self.jump_start = None
-        if not (self.jumped or self.grounded):
-            if self.fall_start is None:
-                self.fall_start = time()
-            t = time() - self.fall_start
-            vy = -g * t
+            vy = self.calc_jump()
 
-        if not self.grounded:
-            self.rect.y += 1
-            self.grounded = spritecollideany(self, platforms)
-            self.rect.y -= 1
+        if not self.jumped and not self.grounded:
+            vy = self.calc_fall()
 
         if self.grounded:
             self.mov_dir.j = 0
             self.fall_start = None
-            self.jump_start = None
-            self.jumped = False
 
         collides = spritecollide(self, platforms, False)
         for collide in collides:
@@ -375,14 +412,12 @@ class Slime(GroundEntity, Enemy):
                 self.rect.left = collide.rect.right
             self.mov_dir.i = 0
         self.mov_dir.j += vy
-        self.mov_dir.normalize()
-
-    def correct_trajectory(self):
-        if distance(self.pos, self.player.pos) <= 10:
-            self.end_pos = self.player.pos.copy()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        self.correct_trajectory()
+        self.pos.x = self.rect.x
+        self.pos.pg_y = self.rect.y
+        self.pos.upd()
+
         self.calc_mov_dir()
         self.pos.x += self.mov_dir.i * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
         self.pos.y += self.mov_dir.j * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
@@ -407,34 +442,46 @@ class Wizard(GroundEntity, Enemy):
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
 
+    def correct_trajectory(self):
+        if distance(self.pos, self.player.pos) <= 10:
+            self.end_pos = self.player.pos.copy()
+
+    def check_collides(self):
+        self.rect.y += 1
+        collides = spritecollideany(self, platforms)
+        self.rect.y -= 1
+        self.grounded = False if collides is None else True
+
+    def calc_jump(self):
+        if self.jump_start is None:
+            self.grounded = False
+            self.jump_start = time()
+        t = time() - self.jump_start
+        if t > self.jump_t:
+            self.jumped = False
+            self.jump_start = None
+            return 0
+        return self.jump_v0y - g * t
+
+    def calc_fall(self):
+        if self.fall_start is None:
+            self.fall_start = time()
+        t = time() - self.fall_start
+        return -g * t
+
     def calc_mov_dir(self):
-        self.mov_dir = Vector((self.pos, self.end_pos))
+        self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
+        self.check_collides()
         vy = 0
         if self.jumped:
-            if self.jump_start is None:
-                self.jump_start = time()
-            t = time() - self.jump_start
-            if t < self.jump_t:
-                vy = self.jump_v0y - g * t
-            else:
-                self.jumped = False
-                self.jump_start = None
-        if not (self.jumped or self.grounded):
-            if self.fall_start is None:
-                self.fall_start = time()
-            t = time() - self.fall_start
-            vy = -g * t
+            vy = self.calc_jump()
 
-        if not self.grounded:
-            self.rect.y += 1
-            self.grounded = spritecollideany(self, platforms)
-            self.rect.y -= 1
+        if not self.jumped and not self.grounded:
+            vy = self.calc_fall()
 
         if self.grounded:
             self.mov_dir.j = 0
             self.fall_start = None
-            self.jump_start = None
-            self.jumped = False
 
         collides = spritecollide(self, platforms, False)
         for collide in collides:
@@ -444,14 +491,12 @@ class Wizard(GroundEntity, Enemy):
                 self.rect.left = collide.rect.right
             self.mov_dir.i = 0
         self.mov_dir.j += vy
-        self.mov_dir.normalize()
-
-    def correct_trajectory(self):
-        if distance(self.pos, self.player.pos) <= 10:
-            self.end_pos = self.player.pos.copy()
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        self.correct_trajectory()
+        self.pos.x = self.rect.x
+        self.pos.pg_y = self.rect.y
+        self.pos.upd()
+
         self.calc_mov_dir()
         self.pos.x += self.mov_dir.i * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
         self.pos.y += self.mov_dir.j * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
