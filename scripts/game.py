@@ -72,6 +72,7 @@ class LevelScreen:
 class StartLevel:
     def __init__(self, level):
         self.image = pygame.Surface((WIDTH, HEIGHT))
+        self.bg = pygame.transform.scale(load_image(f"Background/Background{level}.png"), (WIDTH, HEIGHT))
         self.camera = Camera()
         self.buttons = pygame.sprite.Group()
         self.ui = pygame.sprite.Group()
@@ -86,7 +87,7 @@ class StartLevel:
 
     def run(self):
         while True:
-            self.image.fill((0, 50, 0))
+            self.image.blit(self.bg, (0, 0))
             all_sprites.draw(self.image)
             all_sprites.update()
             self.ui.draw(self.image)
