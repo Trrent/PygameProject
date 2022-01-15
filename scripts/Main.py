@@ -7,7 +7,7 @@ from spriteGroups import buttons, all_sprites
 from pathlib import Path
 
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 PATH_HEAD = Path(__file__).parent.parent
 PATH_DATA = Path(PATH_HEAD, 'data')
@@ -71,7 +71,7 @@ def printText(message, pos_x, pos_y, font_size=30, color='black'):  # Вывод
 
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons, width=0, height=0):
+    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons):
         super().__init__(group)
         self.image = inactive_image
         self.active_image = active_image

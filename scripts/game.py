@@ -4,6 +4,7 @@ import pygame
 from Platform import Platform
 # from Enemy import Enemy
 from Main import *
+from Parameters import WIDTH, HEIGHT
 from Camera import Camera
 from spriteGroups import all_sprites, buttons, platforms, enemies
 
@@ -19,15 +20,17 @@ levelBtnImage = load_image('level1_btn.png')
 levelBtnPressedImage = load_image('level1_btn_pressed.png')
 pauseBtnImage = load_image('pause_btn.png')
 pauseBtnPressedImage = load_image('pause_btn_pressed.png')
+backBtnImage = load_image('back_btn.png')
+backBtnPressedImage = load_image('back_btn_pressed.png')
 
 
 class StartScreen:
     def __init__(self):
-        self.bg = pygame.transform.scale(load_image('Background/bg.png'), (WIDTH, HEIGHT))
+        self.bg = pygame.transform.scale(load_image('Background/bg1.jpg'), (WIDTH, HEIGHT))
         self.buttons = pygame.sprite.Group()
         self.levelScreen = LevelScreen()
-        Button(760, 200, self.levelScreen.show, startBtnImage, active_image=startBtnPressedImage, group=self.buttons)
-        Button(960, 200, terminate, exitBtnImage, active_image=exitBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 - 150, HEIGHT // 2 - 300, self.levelScreen.show, startBtnImage, active_image=startBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 + 50, HEIGHT // 2 - 300, terminate, exitBtnImage, active_image=exitBtnPressedImage, group=self.buttons)
 
     def show(self):
         while True:
@@ -49,11 +52,12 @@ class LevelScreen:
         self.bg = pygame.transform.scale(load_image('bg.jpg'), (WIDTH, HEIGHT))
         self.buttons = pygame.sprite.Group()
 
-        Button(450, 300, 1, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
-        Button(600, 300, 2, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
-        Button(750, 300, 3, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
-        Button(900, 300, 4, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
-        Button(1050, 300, 5, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 - 350, HEIGHT // 2 - 100, 1, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 - 200, HEIGHT // 2 - 100, 2, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 - 50, HEIGHT // 2 - 100, 3, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 + 100, HEIGHT // 2 - 100, 4, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 + 250,HEIGHT // 2 - 100, 5, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
+        Button(50, 50, 0, backBtnImage, active_image=backBtnPressedImage, group=self.buttons)
 
     def show(self):
         while True:
@@ -64,8 +68,11 @@ class LevelScreen:
                     terminate()
             for b in self.buttons:
                 if b.is_pressed():
-                    level = StartLevel(b.action)
-                    return level.run()
+                    if b.action == 0:
+                        return start_screen.show()
+                    else:
+                        level = StartLevel(b.action)
+                        return level.run()
             screen.blit(self.bg, (0, 0))
             pygame.display.flip()
             clock.tick(FPS)
@@ -86,10 +93,11 @@ class StartLevel:
         px, py = load_level(level, [self.all_sprites, self.platforms])
         self.player = Player(px, py, self)
         self.hpBar = HealthBar(self.player, group=self.ui)
-        Button(1700, 40, self.pauseScreen.show, pauseBtnImage,
+        Button(WIDTH - WIDTH // 10, HEIGHT // 20, self.pauseScreen.show, pauseBtnImage,
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
 
     def run(self):
+        iterations = 0
         while True:
             self.image.fill((0, 50, 0))
             self.all_sprites.draw(self.image)
@@ -151,8 +159,8 @@ class DeathScreen:
         self.image.fill((255, 255, 255, 128))
         self.buttons = pygame.sprite.Group()
         self.level = lvl
-        Button(760, 400, self.retryAction, retryBtnImage, active_image=retryBtnPressedImage, group=self.buttons)
-        Button(960, 400, start_screen.show, homeBtnImage, active_image=homeBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 - 150, HEIGHT // 2 - 100, self.retryAction, retryBtnImage, active_image=retryBtnPressedImage, group=self.buttons)
+        Button(WIDTH // 2 + 50, HEIGHT // 2 - 100, start_screen.show, homeBtnImage, active_image=homeBtnPressedImage, group=self.buttons)
 
     def show(self):
         screen.blit(self.image, (0, 0))
@@ -176,12 +184,13 @@ class DeathScreen:
 class PauseScreen:
     def __init__(self, lvl):
         self.image = pygame.Surface((WIDTH // 2, HEIGHT // 2), pygame.SRCALPHA)
+        width, height = WIDTH // 2, HEIGHT // 2
         self.image.fill((255, 255, 255, 200))
         self.buttons = pygame.sprite.Group()
         self.level = lvl
-        Button(750, 450, None, startBtnImage, active_image=startBtnPressedImage, group=self.buttons)
-        Button(900, 450, self.retryAction, retryBtnImage, active_image=retryBtnPressedImage, group=self.buttons)
-        Button(1050, 450, start_screen.show, homeBtnImage, active_image=homeBtnPressedImage, group=self.buttons)
+        Button(width - 200, height - 50, None, startBtnImage, active_image=startBtnPressedImage, group=self.buttons)
+        Button(width - 50, height - 50, self.retryAction, retryBtnImage, active_image=retryBtnPressedImage, group=self.buttons)
+        Button(width + 100, height - 50, start_screen.show, homeBtnImage, active_image=homeBtnPressedImage, group=self.buttons)
 
     def show(self):
         screen.blit(self.image, (WIDTH // 4, HEIGHT // 4))
