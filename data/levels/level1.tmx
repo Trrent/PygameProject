@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="100" height="50" tilewidth="50" tileheight="50" infinite="0" nextlayerid="2" nextobjectid="1">
+ <tileset firstgid="1" name="tileset" tilewidth="97" tileheight="97" tilecount="494" columns="19">
+  <image source="../sprites/Platforms/tileset.jpg" trans="3c3c3c" width="1920" height="2566"/>
+ </tileset>
+ <layer id="1" name="Слой тайлов 1" width="100" height="50">
+  <data encoding="base64" compression="zlib">
+   eJzt1UsKwyAQAFBPUSg9QaF0k/vfrQSyCCHGSbBq6XsgA35mITOaEgAAAAAAAAAAADBV2kPMlbssnYnmvGXi3p5ac6OZ0vF9taz1Zybu7ak119uIb0nPul33YmT8g551u+7FyKgtWgOlOLsv8bHJn1uP/A+tjFLr0Rooxdlrie9N/tx65H9oZcS/5FdE3/Yzfc910bf9TN8DAAAAAADwHR/trRCw
+  </data>
+ </layer>
+</map>
