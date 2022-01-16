@@ -50,7 +50,7 @@ def load_level(level, group):
     for y in range(len(levelMap)):
         for x in range(len(levelMap[y])):
             if levelMap[y][x] == '#':
-                Platform(50 * x, 50 * y + 300, load_image("grass.png"), group)
+                Platform(50 * x, 50 * y + 300, load_image("grass.png"))
             elif levelMap[y][x] == '@':
                 px, py = 50 * x, 50 * y + 300
     return px, py
