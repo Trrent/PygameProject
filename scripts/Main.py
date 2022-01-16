@@ -1,5 +1,5 @@
 import sys
-import os
+import pytmx
 from Parameters import *
 import pygame
 from Platform import Platform
@@ -12,15 +12,9 @@ clock = pygame.time.Clock()
 PATH_HEAD = Path(__file__).parent.parent
 PATH_DATA = Path(PATH_HEAD, 'data')
 
+sound1 = pygame.mixer.Sound('data/sounds/b1.mp3')
+sound1.set_volume(0.2)
 
-# levels = [
-#     [
-#         "#########################################################################################################################",
-#         "..................######################.............##########................############......................########",
-#         "#######..............................................###############.........######.....................#################",
-#         "@.................######################.................................................................................",
-#         "#######################################################################################.....#############################"
-# ]]
 
 def load_image(name, colorkey=None):
     filename = Path(PATH_DATA, 'sprites', name)
@@ -38,22 +32,21 @@ def load_image(name, colorkey=None):
     return image
 
 
-def load_level(level, group):
-    filename = Path(PATH_DATA, 'levels', f"level_{level}.txt")
+def load_level(level):
+    filename = Path(PATH_DATA, 'levels', f"{level}.tmx")
     if not filename.is_file():
-        print(f"Файл 'level_{level}.txt' не найден")
+        print(f"Файл '{level}.tmx' не найден")
         terminate()
-    with open(filename, 'r') as mapFile:
-        levelMap = [line.strip() for line in mapFile]
-    px, py = None, None
+    map = pytmx.load_pygame(filename)
+    h, w = map.height, map.width
+    tileW, tileH = map.tilewidth, map.tileheight
     x, y = None, None
-    for y in range(len(levelMap)):
-        for x in range(len(levelMap[y])):
-            if levelMap[y][x] == '#':
-                Platform(50 * x, 50 * y + 300, load_image("grass.png"))
-            elif levelMap[y][x] == '@':
-                px, py = 50 * x, 50 * y + 300
-    return px, py
+    for y in range(h):
+        for x in range(w):
+            image = map.get_tile_image(x, y, 0)
+            if image:
+                Platform(x * tileW, y * tileH, image)
+    return 2 * tileW, 9 * tileH # координаты игрока, на всех уровнях спавнится в одном месте
 
 
 def load_font(font_size, font_type='Comic_CAT.otf'):  # Создание шрифта для текста
@@ -86,6 +79,7 @@ class Button(pygame.sprite.Sprite):
         click = pygame.mouse.get_pressed()
         if self.rect.collidepoint(mouse):
             if click[0]:
+                sound1.play()
                 return True
         return False
 

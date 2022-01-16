@@ -79,11 +79,19 @@ class StartLevel:
         self.pauseScreen = PauseScreen(level)
         self.deathScreen = DeathScreen(level)
         self.level = level
-        px, py = load_level(level, [all_sprites, platforms])
+        px, py = load_level(level)
         self.player = Player(Physics.Point(px, py), load_image("player.png"))
+        self.camera.update(self.player)
+        for sprite in all_sprites:
+            self.camera.apply(sprite)
+        self.player.end_pos = Physics.Point(self.player.rect.x, self.player.rect.x)
+        print(self.player.rect.x, self.player.rect.y)
         self.hpBar = HealthBar(self.player, group=self.ui)
         Button(1700, 40, self.pauseScreen.show, pauseBtnImage,
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
+        pygame.mixer.music.load(f'data/sounds/{level}.mp3')
+        pygame.mixer.music.set_volume(0.3)
+        pygame.mixer.music.play()
 
     def run(self):
         while True:
@@ -160,6 +168,7 @@ class PauseScreen:
         Button(1050, 450, start_screen.show, homeBtnImage, active_image=homeBtnPressedImage, group=self.buttons)
 
     def show(self):
+        pygame.mixer.music.pause()
         screen.blit(self.image, (WIDTH // 4, HEIGHT // 4))
         while True:
             self.buttons.update()
@@ -174,7 +183,7 @@ class PauseScreen:
                 if b.is_pressed():
                     if b.action is not None:
                         return b.action()
-                    return
+                    return pygame.mixer.music.unpause()
             pygame.display.flip()
             clock.tick(FPS)
 
