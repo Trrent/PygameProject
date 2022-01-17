@@ -7,7 +7,7 @@ from spriteGroups import buttons, all_sprites
 from pathlib import Path
 
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 PATH_HEAD = Path(__file__).parent.parent
 PATH_DATA = Path(PATH_HEAD, 'data')
@@ -54,17 +54,17 @@ def load_font(font_size, font_type='Comic_CAT.otf'):  # Создание шри�
     return pygame.font.Font(font_path, font_size)
 
 
-def printText(message, pos_x, pos_y, font_size=30, color='black'):  # Вывод текста
+def printText(message, pos_x, pos_y, font_size=30, color='black', surface=screen):  # Вывод текста
     font = load_font(font_size=font_size)
     string_rendered = font.render(message, True, pygame.Color(color))
     intro_rect = string_rendered.get_rect()
     intro_rect.top = pos_y
     intro_rect.x = pos_x
-    screen.blit(string_rendered, intro_rect)
+    surface.blit(string_rendered, intro_rect)
 
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons, width=0, height=0):
+    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons):
         super().__init__(group)
         self.image = inactive_image
         self.active_image = active_image

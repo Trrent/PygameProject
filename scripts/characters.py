@@ -1,10 +1,10 @@
+import pygame
 from time import time
 from typing import Any
-
 from pygame.sprite import Sprite, spritecollideany, spritecollide
 from pygame.surface import Surface, SurfaceType
 from pygame.mask import from_surface
-
+from Main import load_image
 from Physics import *
 from spriteGroups import all_sprites, platforms, enemies
 
@@ -19,6 +19,13 @@ class Entity:
 
         self.mov_dir = Vector((0, 0))
         self.end_pos = self.pos.copy()
+    
+    def changeFrames(self, key):
+        self.current_frames = self.frames[key][2]
+
+    def updateFrame(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.current_frames)
+        self.image = self.current_frames[self.cur_frame]
 
 
 class GroundEntity(Entity):
@@ -46,6 +53,10 @@ class GroundEntity(Entity):
         self.end_pos = pos.copy() if type(pos) == pos else Point(pos[0], pos[1])
         if immediately:
             self.pos = self.end_pos.copy()
+    
+    def stop(self):
+        self.end_pos.x = self.rect.x
+        self.mov_dir.i = 0
 
 
 class FlyingEntity(Entity):
@@ -76,21 +87,43 @@ class Enemy(Sprite):
 
 
 class Player(GroundEntity, Friend):
-    def __init__(self, pos: Point, image: Surface | SurfaceType, hor_vel=10, health=100, damage=20, cooldown=1,
+    def __init__(self, pos: Point, hor_vel=10, health=100, damage=20, cooldown=1,
                  jump_height=70):
         super().__init__(pos, hor_vel, health, damage, cooldown, jump_height)
         Friend.__init__(self, all_sprites)
-        self.image = image
+        self.frames = {'Attack1Right': (4, 1, []), 'DeathRight': (9, 1, []), 'FallRight': (6, 1, []),  'FallLeft': (6, 1, []),
+                       'HitRight': (3, 1, []), 'IdleRight': (6, 1, []), 'IdleLeft': (6, 1, []),
+                       'JumpRight': (6, 1, []),  'JumpLeft': (6, 1, []), 'RunRight': (8, 1, []), 'RunLeft': (8, 1, [])}
+        self.cut_sheet()
+        self.direction = True
+        self.current_frames = self.frames['FallRight'][2]
+        self.cur_frame = 0
+        self.image = self.current_frames[self.cur_frame]
         self.rect = self.image.get_rect()
         self.rect.x = self.pos.x
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
+    
+    def cut_sheet(self):
+        for name, (columns, rows, frames) in self.frames.items():
+            sheet = load_image(f"Hero/{name}.png")
+            self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
+            for j in range(rows):
+                for i in range(columns):
+                    frame_location = (self.rect.w * i, self.rect.h * j)
+                    frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
+    
+    def attack(self):
+        self.changeFrames('Attack1Right')
+        self.updateFrame()
+        for sprite in spritecollide(self, enemies, False):
+            sprite.health -= self.damage
 
     def check_collides(self):
         self.rect.y += 1
         collides = spritecollideany(self, platforms)
         self.rect.y -= 1
-        self.grounded = False if collides is None else True
+        self.grounded = True if collides else False
 
     def calc_jump(self):
         if self.jump_start is None:
@@ -98,9 +131,11 @@ class Player(GroundEntity, Friend):
             self.jump_start = time()
         t = time() - self.jump_start
         if t > self.jump_t:
+            self.changeFrames('IdleRight' if self.direction else 'IdleLeft')
             self.jumped = False
             self.jump_start = None
             return 0
+        self.changeFrames('JumpRight' if self.direction else 'JumpLeft')
         return self.jump_v0y - g * t
 
     def calc_fall(self):
@@ -120,6 +155,8 @@ class Player(GroundEntity, Friend):
             vy = self.calc_fall()
 
         if self.grounded:
+            if self.fall_start:
+                self.changeFrames('IdleRight' if self.direction else 'IdleLeft')
             self.mov_dir.j = 0
             self.fall_start = None
 
@@ -138,8 +175,14 @@ class Player(GroundEntity, Friend):
         self.pos.upd()
 
         self.calc_mov_dir()
-        self.pos.x += self.mov_dir.i * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
-        self.pos.y += self.mov_dir.j * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
+        self.pos.x += self.mov_dir.i * self.hor_vel / (2 * self.hor_vel ** 2)
+        if self.mov_dir.i > 0:
+            self.direction = True
+            self.changeFrames('RunRight')
+        elif self.mov_dir.i < 0:
+            self.direction = False
+            self.changeFrames('RunLeft')
+        self.pos.y += self.mov_dir.j * self.hor_vel / (2 * self.hor_vel ** 2)
         self.pos.upd()
 
         if 0 < distance(self.pos, self.end_pos) <= 1.1:
