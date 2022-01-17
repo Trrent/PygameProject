@@ -95,6 +95,7 @@ class StartLevel:
         px, py = load_level(level)
         self.player = Player(px, py)
         self.playerGlobalX = px # насколько player удалён от координаты x = 0
+        self.playerGlobalY = py # насколько player удалён от координаты y = 0
         self.camera.update(self.player)
         for sprite in all_sprites:
             self.camera.apply(sprite)
@@ -123,15 +124,17 @@ class StartLevel:
                 if b.is_pressed():
                     b.action()
             self.camera.update(self.player)
+            self.playerGlobalX -= self.camera.dx
+            self.playerGlobalY -= self.camera.dy
             for sprite in all_sprites:
                 self.camera.apply(sprite)
             if self.player.hp <= 0:
                 return self.deathScreen.show()
-            if self.player.rect.top > HEIGHT:
-                self.player.hp = 0
             if self.playerGlobalX >= 23000:
                 self.pauseScreen.show()
                 # нужен экран окончания уровня с возможностью перехода на следующий
+            if self.playerGlobalY > HEIGHT * 1.1:
+                self.player.hp = 0
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
