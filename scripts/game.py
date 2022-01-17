@@ -1,9 +1,10 @@
 import pygame
-import Physics
+from Physics import Point
 from pygame.sprite import spritecollide
 from Main import *
 from Camera import Camera
 from spriteGroups import all_sprites, buttons, platforms, enemies
+from characters import Skeleton
 
 retryBtnImage = load_image('retry_btn.png')
 retryBtnPressedImage = load_image('retry_btn_pressed.png')
@@ -94,12 +95,13 @@ class StartLevel:
         enemies.empty()
         px, py = load_level(level)
         self.player = Player(px, py)
+        self.skeleton = Skeleton(Point(px + 1000, py - 100), load_image('player.png'), self.player)
         self.playerGlobalX = px # насколько player удалён от координаты x = 0
         self.playerGlobalY = py # насколько player удалён от координаты y = 0
         self.camera.update(self.player)
         for sprite in all_sprites:
             self.camera.apply(sprite)
-        self.player.end_pos = Physics.Point(self.player.rect.x, self.player.rect.x)
+        self.player.end_pos = Point(self.player.rect.x, self.player.rect.x)
         self.hpBar = HealthBar(self.player, group=self.ui)
         Button(WIDTH - WIDTH // 10, HEIGHT // 20, self.pauseScreen.show, pauseBtnImage,
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
@@ -113,8 +115,8 @@ class StartLevel:
             self.image.blit(self.bg, (0, 0))
             all_sprites.draw(self.image)
             all_sprites.update()
-            self.ui.draw(self.image)
             self.ui.update()
+            self.ui.draw(self.image)
 
             if iterations == 5:
                 self.player.updateFrame()
@@ -142,6 +144,7 @@ class StartLevel:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_w or event.key == pygame.K_SPACE:
                         self.player.jump()
+                        # self.player.hp -= 20
                         self.player.jumped = True
                     if event.key == pygame.K_d:
                         self.player.move("RIGHT")
@@ -236,16 +239,18 @@ class HealthBar(pygame.sprite.Sprite):
     def __init__(self, player, group):
         super().__init__(group)
         self.player = player
-        # self.image = pygame.transform.scale(load_image('hp_bar.png'), (302, 120))
-        self.image = pygame.Surface((315, 100))
+        self.bar = pygame.transform.scale(load_image('hp_bar.png'), (302, 120))
+        self.image = pygame.Surface((315, 100), pygame.SRCALPHA)
         self.rect = self.image.get_rect()
 
         self.rect.x = 50
         self.rect.y = 30
 
     def update(self):
-        self.image.fill((0, 0, 0))
-        pygame.draw.line(self.image, pygame.Color('red'), (15, 50), (int(300 * self.player.hp / 100), 50), width=50)
+        self.image.fill((255, 255, 255, 255))
+        value = 202 * (100 - self.player.hp) / 100
+        pygame.draw.line(self.image, pygame.Color('red'), (65, 52), (267 - int(value) , 52), width=50)
+        self.image.blit(self.bar, (0, 0))
 
 
 class Player(pygame.sprite.Sprite):
@@ -256,6 +261,7 @@ class Player(pygame.sprite.Sprite):
                        'HitRight': (3, 1, []), 'IdleRight': (6, 1, []), 'IdleLeft': (6, 1, []),
                        'JumpRight': (6, 1, []),  'JumpLeft': (6, 1, []), 'RunRight': (8, 1, []), 'RunLeft': (8, 1, [])}
         self.cut_sheet()
+        self.pos = Point(pos_x, pos_y)
         self.direction = True
         self.current_frames = self.frames['FallRight'][2]
         self.cur_frame = 0
@@ -353,6 +359,109 @@ class Player(pygame.sprite.Sprite):
     def stop(self):
         self.vx = 0
         self.changeFrames('IdleRight' if self.direction else 'IdleLeft')
+
+
+# class Skeleton(pygame.sprite.Sprite):
+#     def __init__(self, pos_x, pos_y):
+#         super().__init__(all_sprites)
+#         self.frames = {'AttackRight': (8, 1, []), 'AttackLeft': (8, 1, []), 'DeathRight': (4, 1, []),
+#                        'DeathLeft': (4, 1, []), 'HitRight': (4, 1, []), 'HitLeft': (4, 1, []), 'IdleRight': (4, 1, []),
+#                        'IdleLeft': (4, 1, []), 'WalkRight': (4, 1, []), 'WalkLeft': (4, 1, [])}
+#         self.cut_sheet()
+#         self.direction = True
+#         self.current_frames = self.frames['WalkRight'][2]
+#         self.cur_frame = 0
+#         self.image = self.current_frames[self.cur_frame]
+#         self.rect = self.image.get_rect()
+#         self.rect.x = pos_x
+#         self.rect.y = pos_y
+#         self.mask = pygame.mask.from_surface(self.image)
+#         self.vx, self.vy = 0, 0  # скорость по x и по y
+#         self.grounded = False
+#         self.hp = 100
+#         self.damage = 20
+#         self.attacking = False
+#
+#     def cut_sheet(self):
+#         for name, (columns, rows, frames) in self.frames.items():
+#             sheet = load_image(f"Enemies/skeleton/{name}.png")
+#             self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
+#             for j in range(rows):
+#                 for i in range(columns):
+#                     frame_location = (self.rect.w * i, self.rect.h * j)
+#                     frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
+#
+#     def move(self, direction):
+#         if direction == "RIGHT":
+#             self.vx = 5
+#             self.direction = True
+#
+#         if direction == "LEFT":
+#             self.vx = -5
+#             self.direction = False
+#
+#     def jump(self):
+#         if self.grounded:
+#             self.vy -= 15
+#             self.grounded = False
+#
+#     def attack(self):
+#         if self.attacking:
+#             return
+#         self.rect.x += 110
+#         if pygame.sprite.spritecollideany(self, platforms):
+#             self.rect.x -= 110
+#             return
+#         self.rect.x -= 110
+#         self.attacking = True
+#         for sprite in spritecollide(self, enemies, False):
+#             sprite.health -= self.damage
+#
+#     def changeFrames(self, key):
+#         self.current_frames = self.frames[key][2]
+#
+#     def updateFrame(self):
+#         self.cur_frame = (self.cur_frame + 1) % len(self.current_frames)
+#         self.image = self.current_frames[self.cur_frame]
+#         if self.cur_frame == 0 and self.attacking:
+#             self.attacking = False
+#
+#     def update(self):
+#         self.rect.y += self.vy
+#         collides = pygame.sprite.spritecollide(self, platforms, False)
+#         for p in collides:
+#             if self.vy > 0 and self.vy != 0.81:
+#                 self.rect.bottom = p.rect.top
+#                 self.grounded = True
+#             if self.vy < 0:
+#                 self.rect.top = p.rect.bottom
+#             self.vy = 0
+#         self.rect.x += self.vx
+#         collides = pygame.sprite.spritecollide(self, platforms, False)
+#         for p in collides:
+#             if self.vx > 0:
+#                 self.rect.right = p.rect.left
+#             if self.vx < 0:
+#                 self.rect.left = p.rect.right
+#             self.vx = 0
+#         if self.attacking:
+#             self.changeFrames('AttackRight' if self.direction else 'AttackLeft')
+#         if self.vy == 0 and self.vx == 0 and not self.attacking:
+#             self.changeFrames('IdleRight' if self.direction else 'IdleLeft')
+#         if self.vy == 0 and self.vx != 0:
+#             self.changeFrames('WalkRight' if self.direction else 'WalkLeft')
+#         self.checkGrounded()
+#         if not self.grounded:
+#             self.vy += 0.81  # 5g / 60
+#
+#     def checkGrounded(self):
+#         self.rect.y += 1
+#         self.grounded = pygame.sprite.spritecollideany(self, platforms)
+#         self.rect.y -= 1
+#
+#     def stop(self):
+#         self.vx = 0
+#         self.changeFrames('IdleRight' if self.direction else 'IdleLeft')
 
 
 if __name__ == '__main__':

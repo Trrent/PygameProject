@@ -6,8 +6,7 @@ from Platform import Platform
 from spriteGroups import buttons, all_sprites
 from pathlib import Path
 
-
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 clock = pygame.time.Clock()
 PATH_HEAD = Path(__file__).parent.parent
 PATH_DATA = Path(PATH_HEAD, 'data')
@@ -28,12 +27,14 @@ def load_image(name, colorkey=None):
         image = image.convert_alpha()
     return image
 
+
 def load_sound(name):
     filename = Path(PATH_DATA, 'sounds', name)
     if not filename.is_file():
         print(f"Файл '{name}' не найден")
         terminate()
     return pygame.mixer.Sound(filename)
+
 
 def load_music(name, music):
     filename = Path(PATH_DATA, 'sounds', name)
@@ -58,7 +59,7 @@ def load_level(level):
             image = map.get_tile_image(x, y, 0)
             if image:
                 Platform(x * tileW, y * tileH, image)
-    return 2 * tileW, 9 * tileH # координаты игрока, на всех уровнях спавнится в одном месте
+    return 2 * tileW, 9 * tileH  # координаты игрока, на всех уровнях спавнится в одном месте
 
 
 def load_font(font_size, font_type='Comic_CAT.otf'):  # Создание шрифта для текста
@@ -77,6 +78,7 @@ def printText(message, pos_x, pos_y, font_size=30, color='black', surface=screen
 
 sound1 = load_sound('b1.mp3')
 sound1.set_volume(0.2)
+
 
 class Button(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons):
