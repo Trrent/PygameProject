@@ -19,6 +19,7 @@ pauseBtnImage = load_image('pause_btn.png')
 pauseBtnPressedImage = load_image('pause_btn_pressed.png')
 backBtnImage = load_image('back_btn.png')
 backBtnPressedImage = load_image('back_btn_pressed.png')
+mixer = pygame.mixer.music
 
 
 class StartScreen:
@@ -30,9 +31,9 @@ class StartScreen:
         Button(WIDTH // 2 + 50, HEIGHT // 2 - 300, terminate, exitBtnImage, active_image=exitBtnPressedImage, group=self.buttons)
 
     def show(self):
-        pygame.mixer.music.load(f'data/sounds/menu.mp3')
-        pygame.mixer.music.set_volume(0.2)
-        pygame.mixer.music.play(-1)
+        music = load_music(f'menu.mp3', mixer)
+        music.set_volume(0.2)
+        music.play(-1)
         while True:
             self.buttons.update()
             self.buttons.draw(self.bg)
@@ -101,9 +102,9 @@ class StartLevel:
         self.hpBar = HealthBar(self.player, group=self.ui)
         Button(WIDTH - WIDTH // 10, HEIGHT // 20, self.pauseScreen.show, pauseBtnImage,
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
-        pygame.mixer.music.load(f'data/sounds/{level}.mp3')
-        pygame.mixer.music.set_volume(0.1)
-        pygame.mixer.music.play(-1)
+        music = load_music(f'{level}.mp3', mixer)
+        music.set_volume(0.1)
+        music.play(-1)
 
     def run(self):
         iterations = 0
@@ -128,7 +129,7 @@ class StartLevel:
                 return self.deathScreen.show()
             if self.player.rect.top > HEIGHT:
                 self.player.hp = 0
-            if self.playerGlobalX >= 23200:
+            if self.playerGlobalX >= 23000:
                 self.pauseScreen.show()
                 # нужен экран окончания уровня с возможностью перехода на следующий
 
@@ -203,7 +204,7 @@ class PauseScreen:
         Button(width + 100, height - 50, start_screen.show, homeBtnImage, active_image=homeBtnPressedImage, group=self.buttons)
 
     def show(self):
-        pygame.mixer.music.pause()
+        mixer.pause()
         screen.blit(self.image, (WIDTH // 4, HEIGHT // 4))
         while True:
             self.buttons.update()
@@ -218,7 +219,7 @@ class PauseScreen:
                 if b.is_pressed():
                     if b.action is not None:
                         return b.action()
-                    return pygame.mixer.music.unpause()
+                    return mixer.unpause()
             pygame.display.flip()
             clock.tick(FPS)
 

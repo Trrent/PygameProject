@@ -12,9 +12,6 @@ clock = pygame.time.Clock()
 PATH_HEAD = Path(__file__).parent.parent
 PATH_DATA = Path(PATH_HEAD, 'data')
 
-sound1 = pygame.mixer.Sound('data/sounds/b1.mp3')
-sound1.set_volume(0.2)
-
 
 def load_image(name, colorkey=None):
     filename = Path(PATH_DATA, 'sprites', name)
@@ -30,6 +27,21 @@ def load_image(name, colorkey=None):
     else:
         image = image.convert_alpha()
     return image
+
+def load_sound(name):
+    filename = Path(PATH_DATA, 'sounds', name)
+    if not filename.is_file():
+        print(f"Файл '{name}' не найден")
+        terminate()
+    return pygame.mixer.Sound(filename)
+
+def load_music(name, music):
+    filename = Path(PATH_DATA, 'sounds', name)
+    if not filename.is_file():
+        print(f"Файл '{name}' не найден")
+        terminate()
+    music.load(filename)
+    return music
 
 
 def load_level(level):
@@ -62,6 +74,9 @@ def printText(message, pos_x, pos_y, font_size=30, color='black', surface=screen
     intro_rect.x = pos_x
     surface.blit(string_rendered, intro_rect)
 
+
+sound1 = load_sound('b1.mp3')
+sound1.set_volume(0.2)
 
 class Button(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons):
