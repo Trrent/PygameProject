@@ -81,46 +81,41 @@ sound1.set_volume(0.2)
 
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons):
+    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons, locked=False):
         super().__init__(group)
-        self.image = inactive_image
+        self.image = inactive_image.copy()
         self.active_image = active_image
         self.action = action
+        self.locked = locked
         self.inactive_image = inactive_image
+
+        self.locker = load_image('lock.png')
+        if locked:
+            self.image.blit(self.locker, (0, 0))
+
         self.rect = self.image.get_rect()
         self.rect.x = pos_x
         self.rect.y = pos_y
 
     def is_pressed(self):
         mouse = pygame.mouse.get_pos()
-        click = pygame.mouse.get_pressed()
-        if self.rect.collidepoint(mouse):
-            if click[0]:
-                sound1.play()
-                return True
-        return False
+        if not self.locked:
+            click = pygame.mouse.get_pressed()
+            if self.rect.collidepoint(mouse):
+                if click[0]:
+                    sound1.play()
+                    return True
+            return False
 
     def update(self):
-        mouse = pygame.mouse.get_pos()
-        if self.rect.collidepoint(mouse):
-            if self.active_image is not None:
-                self.image = self.active_image
-        else:
+        if not self.locked:
             self.image = self.inactive_image
-
-
-class HealthBar(pygame.sprite.Sprite):
-    def __init__(self, player, group=all_sprites):
-        super().__init__(group)
-        self.player = player
-        self.image = pygame.transform.scale(load_image('hp_bar.png'), (102, 40))
-        self.rect = self.image.get_rect()
-
-        self.rect.x = -300
-        self.rect.y = 30
-
-    def update(self):
-        pass
+            mouse = pygame.mouse.get_pos()
+            if self.rect.collidepoint(mouse):
+                if self.active_image is not None:
+                    self.image = self.active_image
+            else:
+                self.image = self.inactive_image
 
 
 def terminate():
