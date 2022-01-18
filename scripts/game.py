@@ -3,7 +3,7 @@ import Physics
 from pygame.sprite import spritecollide
 from Main import *
 from Camera import Camera
-from spriteGroups import all_sprites, buttons, platforms, enemies
+from spriteGroups import all_sprites, platforms, enemies
 
 retryBtnImage = load_image('retry_btn.png')
 retryBtnPressedImage = load_image('retry_btn_pressed.png')
@@ -30,10 +30,10 @@ class StartScreen:
         Button(WIDTH // 2 - 150, HEIGHT // 2 - 300, self.levelScreen.show, startBtnImage, active_image=startBtnPressedImage, group=self.buttons)
         Button(WIDTH // 2 + 50, HEIGHT // 2 - 300, terminate, exitBtnImage, active_image=exitBtnPressedImage, group=self.buttons)
 
-    def show(self):
-        music = load_music(f'menu.mp3', mixer)
-        music.set_volume(0.2)
-        music.play(-1)
+    def show(self, playMusic=True):
+        if playMusic:
+            music = load_music(f'menu.mp3', mixer)
+            music.play(-1)
         while True:
             self.buttons.update()
             self.buttons.draw(self.bg)
@@ -50,14 +50,12 @@ class StartScreen:
 
 class LevelScreen:
     def __init__(self):
-        self.bg = pygame.transform.scale(load_image('bg.jpg'), (WIDTH, HEIGHT))
+        self.bg = pygame.transform.scale(load_image('Background/bg1.jpg'), (WIDTH, HEIGHT))
         self.buttons = pygame.sprite.Group()
 
         Button(WIDTH // 2 - 350, HEIGHT // 2 - 100, 1, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
         Button(WIDTH // 2 - 200, HEIGHT // 2 - 100, 2, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
         Button(WIDTH // 2 - 50, HEIGHT // 2 - 100, 3, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
-        Button(WIDTH // 2 + 100, HEIGHT // 2 - 100, 4, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
-        Button(WIDTH // 2 + 250,HEIGHT // 2 - 100, 5, levelBtnImage, active_image=levelBtnPressedImage, group=self.buttons)
         Button(50, 50, 0, backBtnImage, active_image=backBtnPressedImage, group=self.buttons)
 
     def show(self):
@@ -70,7 +68,7 @@ class LevelScreen:
             for b in self.buttons:
                 if b.is_pressed():
                     if b.action == 0:
-                        return start_screen.show()
+                        return start_screen.show(playMusic=False)
                     else:
                         level = StartLevel(b.action)
                         return level.run()
@@ -104,7 +102,6 @@ class StartLevel:
         Button(WIDTH - WIDTH // 10, HEIGHT // 20, self.pauseScreen.show, pauseBtnImage,
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
         music = load_music(f'{level}.mp3', mixer)
-        music.set_volume(0.1)
         music.play(-1)
 
     def run(self):
@@ -159,7 +156,6 @@ class StartLevel:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         self.player.attack()
-                        iterations = 0
             iterations += 1
             screen.blit(self.image, (0, 0))
             pygame.display.flip()
@@ -283,11 +279,9 @@ class Player(pygame.sprite.Sprite):
         if direction == "RIGHT":
             self.vx = 5
             self.direction = True
-            #self.changeFrames('RunRight')
         if direction == "LEFT":
             self.vx = -5
             self.direction = False
-            #self.changeFrames('RunLeft')
 
     def jump(self):
         if self.grounded:
@@ -308,13 +302,15 @@ class Player(pygame.sprite.Sprite):
             sprite.health -= self.damage
 
     def changeFrames(self, key):
-        self.current_frames = self.frames[key][2]
+        if self.frames[key][2] != self.current_frames:
+            self.current_frames = self.frames[key][2]
+            self.cur_frame = 0
 
     def updateFrame(self):
         self.cur_frame = (self.cur_frame + 1) % len(self.current_frames)
-        self.image = self.current_frames[self.cur_frame]
         if self.cur_frame == 0 and self.attacking:
             self.attacking = False
+        self.image = self.current_frames[self.cur_frame]
 
     def update(self):
         self.rect.y += self.vy
@@ -336,9 +332,9 @@ class Player(pygame.sprite.Sprite):
             self.vx = 0
         if self.attacking:
             self.changeFrames('Attack')
-        if self.vy == 0 and self.vx == 0 and not self.attacking:
+        elif self.vy == 0 and self.vx == 0:
             self.changeFrames('IdleRight' if self.direction else 'IdleLeft')
-        if self.vy == 0 and self.vx != 0:
+        elif self.vy == 0 and self.vx != 0:
             self.changeFrames('RunRight' if self.direction else 'RunLeft')
         self.checkGrounded()
         if not self.grounded:
@@ -356,6 +352,6 @@ class Player(pygame.sprite.Sprite):
 
 
 if __name__ == '__main__':
-    pygame.display.set_caption('Revenge underground')
+    pygame.display.set_caption('Knight Adventures')
     start_screen = StartScreen()
     start_screen.show()

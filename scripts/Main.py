@@ -41,6 +41,7 @@ def load_music(name, music):
         print(f"Файл '{name}' не найден")
         terminate()
     music.load(filename)
+    music.set_volume(0.1)
     return music
 
 
