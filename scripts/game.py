@@ -95,7 +95,7 @@ class StartLevel:
         enemies.empty()
         px, py = load_level(level)
         self.player = Player(px, py)
-        self.skeleton = Skeleton(Point(px + 1000, py - 100), load_image('player.png'), self.player)
+        self.skeleton = Skeleton(Point(px + 1000, py - 200), load_image('player.png'), self.player)
         self.playerGlobalX = px # насколько player удалён от координаты x = 0
         self.playerGlobalY = py # насколько player удалён от координаты y = 0
         self.camera.update(self.player)
@@ -311,7 +311,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x -= 110
         self.attacking = True
         for sprite in spritecollide(self, enemies, False):
-            sprite.health -= self.damage
+            sprite.hp -= self.damage
 
     def changeFrames(self, key):
         self.current_frames = self.frames[key][2]
@@ -350,6 +350,8 @@ class Player(pygame.sprite.Sprite):
         if not self.grounded:
             self.vy += 0.81  # 5g / 60
             self.changeFrames('FallRight' if self.direction else 'FallLeft')
+        self.pos.x = self.rect.x
+        self.pos.pg_y = self.rect.y
 
     def checkGrounded(self):
         self.rect.y += 1

@@ -19,7 +19,7 @@ class Entity:
 
         self.mov_dir = Vector((0, 0))
         self.end_pos = self.pos.copy()
-    
+
     def changeFrames(self, key):
         self.current_frames = self.frames[key][2]
 
@@ -53,7 +53,7 @@ class GroundEntity(Entity):
         self.end_pos = pos.copy() if type(pos) == pos else Point(pos[0], pos[1])
         if immediately:
             self.pos = self.end_pos.copy()
-    
+
     def stop(self):
         self.end_pos.x = self.rect.x
         self.mov_dir.i = 0
@@ -91,9 +91,9 @@ class Player(GroundEntity, Friend):
                  jump_height=70):
         super().__init__(pos, hor_vel, health, damage, cooldown, jump_height)
         Friend.__init__(self, all_sprites)
-        self.frames = {'Attack1Right': (4, 1, []), 'DeathRight': (9, 1, []), 'FallRight': (6, 1, []),  'FallLeft': (6, 1, []),
+        self.frames = {'Attack1Right': (4, 1, []), 'DeathRight': (9, 1, []), 'FallRight': (6, 1, []), 'FallLeft': (6, 1, []),
                        'HitRight': (3, 1, []), 'IdleRight': (6, 1, []), 'IdleLeft': (6, 1, []),
-                       'JumpRight': (6, 1, []),  'JumpLeft': (6, 1, []), 'RunRight': (8, 1, []), 'RunLeft': (8, 1, [])}
+                       'JumpRight': (6, 1, []), 'JumpLeft': (6, 1, []), 'RunRight': (8, 1, []), 'RunLeft': (8, 1, [])}
         self.cut_sheet()
         self.direction = True
         self.current_frames = self.frames['FallRight'][2]
@@ -103,7 +103,7 @@ class Player(GroundEntity, Friend):
         self.rect.x = self.pos.x
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
-    
+
     def cut_sheet(self):
         for name, (columns, rows, frames) in self.frames.items():
             sheet = load_image(f"Hero/{name}.png")
@@ -112,7 +112,7 @@ class Player(GroundEntity, Friend):
                 for i in range(columns):
                     frame_location = (self.rect.w * i, self.rect.h * j)
                     frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
-    
+
     def attack(self):
         self.changeFrames('Attack1Right')
         self.updateFrame()
@@ -193,7 +193,7 @@ class Player(GroundEntity, Friend):
 
 
 class Skeleton(GroundEntity, Enemy):
-    def __init__(self, pos: Point, image: Surface | SurfaceType, player: Player, hor_vel=3, health=100, damage=20, cooldown=1,
+    def __init__(self, pos: Point, image: Surface | SurfaceType, player: Player, hor_vel=10, health=100, damage=20, cooldown=1,
                  jump_height=70):
         super().__init__(pos, hor_vel, health, damage, cooldown, jump_height)
         Enemy.__init__(self, all_sprites, enemies)
@@ -205,8 +205,9 @@ class Skeleton(GroundEntity, Enemy):
         self.mask = from_surface(self.image)
 
     def correct_trajectory(self):
-        if distance(self.pos, self.player.pos) <= 10:
+        if distance(self.pos, self.player.pos) <= 50:
             self.end_pos = self.player.pos.copy()
+        self.end_pos = self.player.pos.copy()  # удалить к релизу
 
     def check_collides(self):
         self.rect.y += 1
@@ -232,6 +233,7 @@ class Skeleton(GroundEntity, Enemy):
         return -g * t
 
     def calc_mov_dir(self):
+        self.correct_trajectory()
         self.mov_dir = Vector((self.pos, self.end_pos)).normalized()
         self.check_collides()
         vy = 0
@@ -241,10 +243,6 @@ class Skeleton(GroundEntity, Enemy):
         if not self.jumped and not self.grounded:
             vy = self.calc_fall()
 
-        if self.grounded:
-            self.mov_dir.j = 0
-            self.fall_start = None
-
         collides = spritecollide(self, platforms, False)
         for collide in collides:
             if self.mov_dir.i > 0:
@@ -252,16 +250,15 @@ class Skeleton(GroundEntity, Enemy):
             if self.mov_dir.i < 0:
                 self.rect.left = collide.rect.right
             self.mov_dir.i = 0
-        self.mov_dir.j += vy
+        if not self.grounded:
+            self.mov_dir.j += vy
+        else:
+            self.fall_start = None
 
     def update(self, *args: Any, **kwargs: Any) -> None:
-        self.pos.x = self.rect.x
-        self.pos.pg_y = self.rect.y
-        self.pos.upd()
-
         self.calc_mov_dir()
-        self.pos.x += self.mov_dir.i * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
-        self.pos.y += self.mov_dir.j * self.hor_vel / (2 * self.hor_vel ** 2) ** 0.5
+        self.pos.x += self.mov_dir.i * self.hor_vel ** 2 / (2 * self.hor_vel ** 2) ** 0.5
+        self.pos.y += self.mov_dir.j * self.hor_vel ** 2 / (2 * self.hor_vel ** 2) ** 0.5
         self.pos.upd()
 
         if 0 < distance(self.pos, self.end_pos) <= 1.1:
