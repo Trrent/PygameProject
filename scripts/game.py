@@ -1,4 +1,5 @@
 import pygame
+import Physics
 from Physics import Point
 from pygame.sprite import spritecollide
 from Main import *
@@ -106,9 +107,9 @@ class StartLevel:
         enemies.empty()
         px, py = load_level(level)
         self.player = Player(px, py)
-        self.skeleton = Skeleton(Point(px + 1000, py - 100), self.player)
-        self.playerGlobalX = px  # насколько player удалён от координаты x = 0
-        self.playerGlobalY = py  # насколько player удалён от координаты y = 0
+        self.playerGlobalX = px # насколько player удалён от координаты x = 0
+        self.playerGlobalY = py # насколько player удалён от координаты y = 0
+        self.skeleton = Skeleton(Physics.Point(px + 1000, py - 200), self.player)
         self.camera.update(self.player)
         for sprite in all_sprites:
             self.camera.apply(sprite)
@@ -164,6 +165,8 @@ class StartLevel:
                         self.pauseScreen.show()
                     if event.key == pygame.K_k:
                         self.player.attack()
+                    if event.key == pygame.K_g:
+                        self.skeleton.jump()
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_d and self.player.vx > 0:
                         self.player.stop()
@@ -323,6 +326,7 @@ class Player(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.image = self.current_frames[self.cur_frame]
         self.rect = self.image.get_rect()
+        self.pos = Physics.Point(pos_x, pos_y)
         self.rect.x = pos_x
         self.rect.y = pos_y
         self.mask = pygame.mask.from_surface(self.image)
@@ -365,7 +369,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x -= 110
         self.attacking = True
         for sprite in spritecollide(self, enemies, False):
-            sprite.health -= self.damage
+            sprite.hp -= self.damage
 
     def changeFrames(self, key):
         if self.frames[key][2] != self.current_frames:
@@ -409,6 +413,10 @@ class Player(pygame.sprite.Sprite):
         if not self.grounded:
             self.vy += 0.81  # 5g / 60
             self.changeFrames('FallRight' if self.direction else 'FallLeft')
+
+        self.pos.x = self.rect.x
+        self.pos.pg_y = self.rect.y
+        self.pos.y = HEIGHT - self.pos.pg_y
 
     def checkGrounded(self):
         self.rect.y += 1
