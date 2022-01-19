@@ -4,6 +4,7 @@ from pygame.sprite import spritecollide
 from Main import *
 from Camera import Camera
 from spriteGroups import all_sprites, buttons, platforms, enemies
+from characters import Skeleton
 
 retryBtnImage = load_image('retry_btn.png')
 retryBtnPressedImage = load_image('retry_btn_pressed.png')
@@ -96,6 +97,7 @@ class StartLevel:
         self.player = Player(px, py)
         self.playerGlobalX = px # насколько player удалён от координаты x = 0
         self.playerGlobalY = py # насколько player удалён от координаты y = 0
+        self.skeleton = Skeleton(load_image("player.png"), Physics.Point(px + 1000, py - 200), self.player)
         self.camera.update(self.player)
         for sprite in all_sprites:
             self.camera.apply(sprite)
@@ -151,6 +153,8 @@ class StartLevel:
                         self.pauseScreen.show()
                     if event.key == pygame.K_k:
                         self.player.attack()
+                    if event.key == pygame.K_g:
+                        self.skeleton.jump()
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_d and self.player.vx > 0:
                         self.player.stop()
@@ -261,6 +265,7 @@ class Player(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.image = self.current_frames[self.cur_frame]
         self.rect = self.image.get_rect()
+        self.pos = Physics.Point(pos_x, pos_y)
         self.rect.x = pos_x
         self.rect.y = pos_y
         self.mask = pygame.mask.from_surface(self.image)
@@ -344,6 +349,10 @@ class Player(pygame.sprite.Sprite):
         if not self.grounded:
             self.vy += 0.81  # 5g / 60
             self.changeFrames('FallRight' if self.direction else 'FallLeft')
+
+        self.pos.x = self.rect.x
+        self.pos.pg_y = self.rect.y
+        self.pos.y = HEIGHT - self.pos.pg_y
 
     def checkGrounded(self):
         self.rect.y += 1
