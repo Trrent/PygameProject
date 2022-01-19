@@ -96,11 +96,12 @@ class Skeleton(GroundEntity, Sprite):
     def check_collision(self):
         collides = pygame.sprite.spritecollide(self, platforms, False)
         for collide in collides:
-            if self.cur_vel.i > 0:
+            if collide.rect.left >= self.rect.right and self.cur_vel.i > 0:
                 self.rect.right = collide.rect.left
-            if self.cur_vel.i < 0:
+                self.cur_vel.i = 0
+            if collide.rect.right <= self.rect.left and self.cur_vel.i < 0:
                 self.rect.left = collide.rect.right
-            self.cur_vel.i = 0
+                self.cur_vel.i = 0
 
     def calc_fall(self):
         if not self.grounded and not self.jumped:
@@ -131,8 +132,8 @@ class Skeleton(GroundEntity, Sprite):
             self.jumped = True
 
     def dir_to_hero(self):
-        if distance(self.pos, self.player.pos) > self.trigger_radius:
-            return 0
+        # if distance(self.pos, self.player.pos) > self.trigger_radius:
+        #     return 0
         direction = Vector((self.pos, self.player.pos))
         i_moving = 0
         if direction.i > 0:
@@ -140,7 +141,8 @@ class Skeleton(GroundEntity, Sprite):
         elif direction.i < 0:
             i_moving = -1
         else:
-            self.jump()
+            if not self.rect.colliderect(self.player.rect):
+                self.jump()
         if self.grounded:
             current_platform = pygame.sprite.spritecollideany(self, platforms)
             self.rect.x += i_moving * self.hor_vel
@@ -166,6 +168,7 @@ class Skeleton(GroundEntity, Sprite):
         self.pos.x += self.cur_vel.i * self.hor_vel
         self.pos.y += self.cur_vel.j
         self.pos.upd()
+
         if self.cur_vel.i > 0:
             self.direction = True
             self.changeFrames('WalkRight')
