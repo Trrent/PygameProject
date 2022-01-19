@@ -1,4 +1,5 @@
 import pygame
+from Physics import Point
 from spriteGroups import all_sprites, platforms
 
 
@@ -10,3 +11,4 @@ class Platform(pygame.sprite.Sprite):
         self.rect.x = pos_x 
         self.rect.y = pos_y
         self.mask = pygame.mask.from_surface(self.image)
+        self.pos = Point(pos_x, pos_y) # заглушка
