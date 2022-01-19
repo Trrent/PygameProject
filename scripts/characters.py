@@ -52,7 +52,7 @@ class Skeleton(GroundEntity, Sprite):
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
         self.trigger_radius = 200
-    
+
     def changeFrames(self, key):
         if self.frames[key][2] != self.current_frames:
             self.current_frames = self.frames[key][2]
@@ -60,7 +60,7 @@ class Skeleton(GroundEntity, Sprite):
 
     def updateFrame(self):
         self.cur_frame = (self.cur_frame + 1) % len(self.current_frames)
-        #if self.cur_frame == 0 and self.attacking:
+        # if self.cur_frame == 0 and self.attacking:
         #    self.attacking = False
         self.image = self.current_frames[self.cur_frame]
 
@@ -72,7 +72,7 @@ class Skeleton(GroundEntity, Sprite):
                 for i in range(columns):
                     frame_location = (self.rect.w * i, self.rect.h * j)
                     frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
-    
+
     def move(self, direction: Vector):
         self.cur_vel.i = direction.i
         self.cur_vel.j = direction.j
@@ -96,10 +96,12 @@ class Skeleton(GroundEntity, Sprite):
     def check_collision(self):
         collides = pygame.sprite.spritecollide(self, platforms, False)
         for collide in collides:
-            if collide.rect.left >= self.rect.right and self.cur_vel.i > 0:
+            if collide.rect.center[1] > self.rect.center[1]:
+                continue
+            if self.cur_vel.i > 0:
                 self.rect.right = collide.rect.left
                 self.cur_vel.i = 0
-            if collide.rect.right <= self.rect.left and self.cur_vel.i < 0:
+            if self.cur_vel.i < 0:
                 self.rect.left = collide.rect.right
                 self.cur_vel.i = 0
 
@@ -126,7 +128,7 @@ class Skeleton(GroundEntity, Sprite):
                 self.jumped = False
                 self.jump_start = None
                 self.cur_vel.j = 0
-    
+
     def jump(self):
         if self.grounded and not self.jumped:
             self.jumped = True
