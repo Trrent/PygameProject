@@ -57,7 +57,7 @@ class Vector:
         else:
             point1, point2 = vector_coords
             self.i = point2.x - point1.x
-            self.j = point2.y - point1.y
+            self.j = round(point2.y - point1.y, 2)
 
     def get_coords(self):
         return self.i, self.j

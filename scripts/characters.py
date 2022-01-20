@@ -35,7 +35,7 @@ class GroundEntity(BaseEntity):
 
 
 class Skeleton(GroundEntity, Sprite):
-    def __init__(self, pos: Point, player, hor_vel=5, damage_cd=3, health=70, damage=15, jump_height=100):
+    def __init__(self, pos: Point, player, hor_vel=4.5, damage_cd=3, health=70, damage=15, jump_height=100):
         GroundEntity.__init__(self, pos, hor_vel, damage_cd, health, damage, jump_height)
         Sprite.__init__(self, all_sprites, enemies)
         self.frames = {'AttackRight': (8, 1, []), 'AttackLeft': (8, 1, []), 'DeathRight': (4, 1, []),
@@ -51,8 +51,8 @@ class Skeleton(GroundEntity, Sprite):
         self.rect.x = self.pos.x
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
-        self.trigger_radius = 200
-    
+        self.trigger_radius = 800
+
     def changeFrames(self, key):
         if self.frames[key][2] != self.current_frames:
             self.current_frames = self.frames[key][2]
@@ -60,7 +60,7 @@ class Skeleton(GroundEntity, Sprite):
 
     def updateFrame(self):
         self.cur_frame = (self.cur_frame + 1) % len(self.current_frames)
-        #if self.cur_frame == 0 and self.attacking:
+        # if self.cur_frame == 0 and self.attacking:
         #    self.attacking = False
         self.image = self.current_frames[self.cur_frame]
 
@@ -72,13 +72,15 @@ class Skeleton(GroundEntity, Sprite):
                 for i in range(columns):
                     frame_location = (self.rect.w * i, self.rect.h * j)
                     frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
-    
+
     def move(self, direction: Vector):
         self.cur_vel.i = direction.i
         self.cur_vel.j = direction.j
 
-    def check_grounded(self):
+    def check_grounded(self):  # 100 % рабочий код
         collides = pygame.sprite.spritecollide(self, platforms, False)
+        if not collides:
+            self.grounded = False
         for collide in collides:
             if self.jumped and not self.grounded:
                 if collide.rect.bottom <= self.rect.top <= collide.rect.top:  # collide.rect.bottom >= self.rect.top and
@@ -93,17 +95,20 @@ class Skeleton(GroundEntity, Sprite):
                     self.fall_start = None
                     self.cur_vel.j = 0
 
-    def check_collision(self):
+    def check_collision(self):  # 80 % рабочий код
+        self.rect.y -= 20
         collides = pygame.sprite.spritecollide(self, platforms, False)
+        self.rect.y += 20
         for collide in collides:
-            if collide.rect.left >= self.rect.right and self.cur_vel.i > 0:
+            #if collide.rect.center[1] > self.rect.center[1]:
+            #    continue
+            if self.cur_vel.i > 0:
                 self.rect.right = collide.rect.left
-                self.cur_vel.i = 0
-            if collide.rect.right <= self.rect.left and self.cur_vel.i < 0:
+            if self.cur_vel.i < 0:
                 self.rect.left = collide.rect.right
-                self.cur_vel.i = 0
+            self.cur_vel.i = 0
 
-    def calc_fall(self):
+    def calc_fall(self):  # 100% рабочий код
         if not self.grounded and not self.jumped:
             if self.fall_start is None:
                 self.fall_start = time()
@@ -113,7 +118,7 @@ class Skeleton(GroundEntity, Sprite):
             self.fall_start = None
             self.cur_vel.j = 0
 
-    def calc_jump(self):
+    def calc_jump(self):  # 100% рабочий код
         if self.jumped:
             self.grounded = False
             if self.jump_start is None:
@@ -126,44 +131,41 @@ class Skeleton(GroundEntity, Sprite):
                 self.jumped = False
                 self.jump_start = None
                 self.cur_vel.j = 0
-    
+
     def jump(self):
         if self.grounded and not self.jumped:
             self.jumped = True
+            self.grounded = False
 
     def dir_to_hero(self):
-        # if distance(self.pos, self.player.pos) > self.trigger_radius:
-        #     return 0
+        if distance(self.pos, self.player.pos) > self.trigger_radius:
+            return 0
         direction = Vector((self.pos, self.player.pos))
-        i_moving = 0
+        i_moving = 0  # это vx
         if direction.i > 0:
-            i_moving = 1
+            i_moving = 1  # направление
         elif direction.i < 0:
             i_moving = -1
-        else:
-            if not self.rect.colliderect(self.player.rect):
-                self.jump()
         if self.grounded:
             current_platform = pygame.sprite.spritecollideany(self, platforms)
-            self.rect.x += i_moving * self.hor_vel
-            updated = pygame.sprite.spritecollideany(self, platforms)
-            self.rect.x -= i_moving * self.hor_vel
-            if updated is None:
-                if i_moving > 0:
-                    delta = current_platform.rect.right - self.rect.right
-                else:
-                    delta = abs(current_platform.rect.left - self.rect.left)
-                i_moving *= (self.hor_vel - delta) / self.hor_vel
+            self.rect.x += 50 * i_moving
+            self.rect.y -= 10
+            obstacle = pygame.sprite.spritecollideany(self, platforms)
+            self.rect.x -= 50 * i_moving
+            self.rect.y += 20
+            floor = pygame.sprite.spritecollideany(self, platforms)
+            self.rect.y -= 10
+            if obstacle or not floor:  # проверка на препятствие или обрыв впереди
                 self.jump()
         self.move(Vector((i_moving, 0)))
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         self.cur_vel = Vector((0, 0))
-        self.dir_to_hero()
+        self.dir_to_hero()  # порядок важен!
         self.calc_fall()
         self.calc_jump()
-        self.check_grounded()
         self.check_collision()
+        self.check_grounded()
 
         self.pos.x += self.cur_vel.i * self.hor_vel
         self.pos.y += self.cur_vel.j

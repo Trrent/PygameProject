@@ -1,11 +1,11 @@
 import pygame
-import Physics
 from Physics import Point
 from pygame.sprite import spritecollide
 from Main import *
 from Camera import Camera
-from spriteGroups import all_sprites, buttons, platforms, enemies
+from spriteGroups import all_sprites, platforms, enemies
 from characters import Skeleton
+from Parameters import skeletons1
 
 retryBtnImage = load_image('retry_btn.png')
 retryBtnPressedImage = load_image('retry_btn_pressed.png')
@@ -109,7 +109,6 @@ class StartLevel:
         self.player = Player(px, py)
         self.playerGlobalX = px # насколько player удалён от координаты x = 0
         self.playerGlobalY = py # насколько player удалён от координаты y = 0
-        self.skeleton = Skeleton(Physics.Point(px + 1000, py - 200), self.player)
         self.camera.update(self.player)
         for sprite in all_sprites:
             self.camera.apply(sprite)
@@ -117,6 +116,9 @@ class StartLevel:
         self.hpBar = HealthBar(self.player, group=self.ui)
         Button(WIDTH - WIDTH // 10, HEIGHT // 20, self.pauseScreen.show, pauseBtnImage,
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
+        self.skeletons = []
+        for coordinate in skeletons1:
+            self.skeletons.append(Skeleton(Point(coordinate[0] * 200, coordinate[1] * 100), self.player))
         music = load_music(f'{level}.mp3', mixer)
         music.play(-1)
 
@@ -131,7 +133,8 @@ class StartLevel:
 
             if iterations == 5:
                 self.player.updateFrame()
-                self.skeleton.updateFrame()
+                for skeleton in self.skeletons:
+                    skeleton.updateFrame()
                 iterations = 0
 
             for b in self.buttons:
@@ -141,6 +144,8 @@ class StartLevel:
             self.playerGlobalX -= self.camera.dx
             self.playerGlobalY -= self.camera.dy
             for sprite in all_sprites:
+                if sprite.hp <= 0:
+                    all_sprites.remove(sprite)
                 self.camera.apply(sprite)
             if self.player.hp <= 0:
                 return self.deathScreen.show()
@@ -326,7 +331,7 @@ class Player(pygame.sprite.Sprite):
         self.cur_frame = 0
         self.image = self.current_frames[self.cur_frame]
         self.rect = self.image.get_rect()
-        self.pos = Physics.Point(pos_x, pos_y)
+        self.pos = Point(pos_x, pos_y)
         self.rect.x = pos_x
         self.rect.y = pos_y
         self.mask = pygame.mask.from_surface(self.image)
