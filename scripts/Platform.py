@@ -12,4 +12,3 @@ class Platform(pygame.sprite.Sprite):
         self.rect.y = pos_y
         self.mask = pygame.mask.from_surface(self.image)
         self.pos = Point(pos_x, pos_y) # заглушка
-        self.hp = 1000000 # тоже заглушка

@@ -3,9 +3,9 @@ from Physics import Point
 from pygame.sprite import spritecollide
 from Main import *
 from Camera import Camera
-from spriteGroups import all_sprites, platforms, enemies
+from spriteGroups import all_sprites, platforms, enemies, player_group
 from characters import Skeleton
-from Parameters import skeletons1
+from Parameters import skeletonsCoords
 
 retryBtnImage = load_image('retry_btn.png')
 retryBtnPressedImage = load_image('retry_btn_pressed.png')
@@ -40,8 +40,11 @@ class StartScreen:
 
     def show(self, playMusic=True):
         if playMusic:
-            music = load_music(f'menu.mp3', mixer)
-            music.play(-1)
+            try:
+                music = load_music(f'menu.mp3', mixer)
+                music.play(-1)
+            except:
+                print("Нет доступного звукового устройства")
         while True:
             self.buttons.update()
             self.buttons.draw(self.bg)
@@ -94,6 +97,7 @@ class LevelScreen:
 class StartLevel:
     def __init__(self, level):
         self.image = pygame.Surface((WIDTH, HEIGHT))
+        self.level = level
         self.bg = pygame.transform.scale(load_image(f"Background/Background1.png"), (WIDTH, HEIGHT))
         self.camera = Camera()
         self.buttons = pygame.sprite.Group()
@@ -101,7 +105,6 @@ class StartLevel:
         self.pauseScreen = PauseScreen(self)
         self.deathScreen = DeathScreen(self)
         self.victoryScreen = VictoryScreen(self)
-        self.level = level
         all_sprites.empty()
         platforms.empty()
         enemies.empty()
@@ -117,10 +120,13 @@ class StartLevel:
         Button(WIDTH - WIDTH // 10, HEIGHT // 20, self.pauseScreen.show, pauseBtnImage,
                active_image=pauseBtnPressedImage, group=[self.buttons, self.ui])
         self.skeletons = []
-        for coordinate in skeletons1:
+        for coordinate in skeletonsCoords[level - 1]:
             self.skeletons.append(Skeleton(Point(coordinate[0] * 200, coordinate[1] * 100), self.player))
-        music = load_music(f'{level}.mp3', mixer)
-        music.play(-1)
+        try:
+            music = load_music(f'{level}.mp3', mixer)
+            music.play(-1)
+        except:
+            print("Нет доступного звукового устройства")
 
     def run(self):
         iterations = 0
@@ -144,8 +150,6 @@ class StartLevel:
             self.playerGlobalX -= self.camera.dx
             self.playerGlobalY -= self.camera.dy
             for sprite in all_sprites:
-                if sprite.hp <= 0:
-                    all_sprites.remove(sprite)
                 self.camera.apply(sprite)
             if self.player.hp <= 0:
                 return self.deathScreen.show()
@@ -229,6 +233,8 @@ class VictoryScreen:
                group=self.buttons)
         Button(width + 100, height - 50, start_screen.show, homeBtnImage, active_image=homeBtnPressedImage,
                group=self.buttons)
+        with open(Path(PATH_DATA, 'levels', 'levelsData.txt'), 'a') as f:
+                            f.write(str(self.level.level + 1))
 
     def show(self):
         mixer.pause()
@@ -245,8 +251,6 @@ class VictoryScreen:
             for b in self.buttons:
                 if b.is_pressed():
                     if b.action is None:
-                        with open(Path(PATH_DATA, 'levels', 'levelsData.txt'), 'a') as f:
-                            f.write(str(self.level.level + 1))
                         level = StartLevel(self.level.level + 1)
                         return level.run()
                     b.action()
@@ -284,7 +288,7 @@ class PauseScreen:
                     terminate()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        return
+                        return mixer.unpause()
             for b in self.buttons:
                 if b.is_pressed():
                     if b.action is not None:
@@ -319,8 +323,8 @@ class HealthBar(pygame.sprite.Sprite):
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
-        super().__init__(all_sprites)
-        self.frames = {'Attack1Right': (4, 1, []), 'Attack1Left': (4, 1, []), 'Attack': (4, 1, []),
+        super().__init__(all_sprites, player_group)
+        self.frames = {'AttackRight': (4, 1, []), 'AttackLeft': (4, 1, []),
                        'DeathRight': (9, 1, []), 'FallRight': (6, 1, []), 'FallLeft': (6, 1, []),
                        'HitRight': (3, 1, []), 'IdleRight': (6, 1, []), 'IdleLeft': (6, 1, []),
                        'JumpRight': (6, 1, []), 'JumpLeft': (6, 1, []), 'RunRight': (8, 1, []), 'RunLeft': (8, 1, [])}
@@ -409,7 +413,8 @@ class Player(pygame.sprite.Sprite):
         if self.hp == 0:
             self.changeFrames('DeathRight' if self.direction else 'DeathLeft')
         if self.attacking:
-            self.changeFrames('Attack')
+            self.changeFrames('AttackRight' if self.direction else 'AttackLeft')
+            self.mask = pygame.mask.from_surface(self.image)
         elif self.vy == 0 and self.vx == 0:
             self.changeFrames('IdleRight' if self.direction else 'IdleLeft')
         elif self.vy == 0 and self.vx != 0:

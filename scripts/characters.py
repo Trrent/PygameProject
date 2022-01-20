@@ -4,11 +4,10 @@ import pygame
 from time import time
 from typing import Any
 from pygame.sprite import Sprite, spritecollideany, spritecollide
-from pygame.surface import Surface, SurfaceType
 from pygame.mask import from_surface
 from Main import load_image
 from Physics import *
-from spriteGroups import all_sprites, platforms, enemies
+from spriteGroups import all_sprites, platforms, enemies, player_group
 
 
 class BaseEntity:
@@ -35,7 +34,7 @@ class GroundEntity(BaseEntity):
 
 
 class Skeleton(GroundEntity, Sprite):
-    def __init__(self, pos: Point, player, hor_vel=4.5, damage_cd=3, health=70, damage=15, jump_height=100):
+    def __init__(self, pos: Point, player, hor_vel=4, damage_cd=3, health=70, damage=5, jump_height=100):
         GroundEntity.__init__(self, pos, hor_vel, damage_cd, health, damage, jump_height)
         Sprite.__init__(self, all_sprites, enemies)
         self.frames = {'AttackRight': (8, 1, []), 'AttackLeft': (8, 1, []), 'DeathRight': (4, 1, []),
@@ -51,7 +50,8 @@ class Skeleton(GroundEntity, Sprite):
         self.rect.x = self.pos.x
         self.rect.y = self.pos.pg_y
         self.mask = from_surface(self.image)
-        self.trigger_radius = 800
+        self.trigger_radius = 600
+        self.attacking = False
 
     def changeFrames(self, key):
         if self.frames[key][2] != self.current_frames:
@@ -59,9 +59,11 @@ class Skeleton(GroundEntity, Sprite):
             self.cur_frame = 0
 
     def updateFrame(self):
+        if self.cur_frame == 3 and self.hp <= 0:
+            return
         self.cur_frame = (self.cur_frame + 1) % len(self.current_frames)
-        # if self.cur_frame == 0 and self.attacking:
-        #    self.attacking = False
+        if self.cur_frame == 0 and self.attacking:
+            self.attacking = False
         self.image = self.current_frames[self.cur_frame]
 
     def cut_sheet(self):
@@ -76,11 +78,16 @@ class Skeleton(GroundEntity, Sprite):
     def move(self, direction: Vector):
         self.cur_vel.i = direction.i
         self.cur_vel.j = direction.j
+    
+    def attack(self):
+        if self.attacking:
+            return
+        self.attacking = True
+        for sprite in spritecollide(self, player_group, False):
+            sprite.hp -= self.damage
 
     def check_grounded(self):  # 100 % рабочий код
         collides = pygame.sprite.spritecollide(self, platforms, False)
-        if not collides:
-            self.grounded = False
         for collide in collides:
             if self.jumped and not self.grounded:
                 if collide.rect.bottom <= self.rect.top <= collide.rect.top:  # collide.rect.bottom >= self.rect.top and
@@ -100,12 +107,15 @@ class Skeleton(GroundEntity, Sprite):
         collides = pygame.sprite.spritecollide(self, platforms, False)
         self.rect.y += 20
         for collide in collides:
-            #if collide.rect.center[1] > self.rect.center[1]:
-            #    continue
             if self.cur_vel.i > 0:
                 self.rect.right = collide.rect.left
             if self.cur_vel.i < 0:
                 self.rect.left = collide.rect.right
+            else:
+                if self.direction:
+                    self.rect.right = collide.rect.left
+                else:
+                    self.rect.left = collide.rect.right
             self.cur_vel.i = 0
 
     def calc_fall(self):  # 100% рабочий код
@@ -139,15 +149,14 @@ class Skeleton(GroundEntity, Sprite):
 
     def dir_to_hero(self):
         if distance(self.pos, self.player.pos) > self.trigger_radius:
-            return 0
+            return
         direction = Vector((self.pos, self.player.pos))
         i_moving = 0  # это vx
-        if direction.i > 0:
+        if direction.i >= 0:
             i_moving = 1  # направление
         elif direction.i < 0:
             i_moving = -1
         if self.grounded:
-            current_platform = pygame.sprite.spritecollideany(self, platforms)
             self.rect.x += 50 * i_moving
             self.rect.y -= 10
             obstacle = pygame.sprite.spritecollideany(self, platforms)
@@ -160,25 +169,33 @@ class Skeleton(GroundEntity, Sprite):
         self.move(Vector((i_moving, 0)))
 
     def update(self, *args: Any, **kwargs: Any) -> None:
+        if self.hp <= 0:
+            self.calc_fall()
+            self.check_grounded()
+            return self.changeFrames('DeathRight' if self.direction else 'DeathLeft')
         self.cur_vel = Vector((0, 0))
         self.dir_to_hero()  # порядок важен!
         self.calc_fall()
         self.calc_jump()
         self.check_collision()
         self.check_grounded()
-
-        self.pos.x += self.cur_vel.i * self.hor_vel
-        self.pos.y += self.cur_vel.j
-        self.pos.upd()
-
-        if self.cur_vel.i > 0:
+        if not self.attacking:
+            self.rect.x += self.cur_vel.i * self.hor_vel
+        self.rect.y -= self.cur_vel.j
+        if spritecollideany(self, player_group):
+            self.attack()
+        else:
+            self.attacking = False
+        if self.attacking:
+            self.changeFrames('AttackRight' if self.direction else 'AttackLeft')
+        elif self.cur_vel.i > 0:
             self.direction = True
             self.changeFrames('WalkRight')
         elif self.cur_vel.i < 0:
             self.direction = False
             self.changeFrames('WalkLeft')
-        if self.cur_vel.i == 0:
+        elif self.cur_vel.i == 0:
             self.changeFrames('IdleRight' if self.direction else 'IdleLeft')
 
-        self.rect.x = self.pos.x
-        self.rect.y = self.pos.pg_y
+        self.pos.x = self.rect.x
+        self.pos.pg_y = self.rect.y
