@@ -3,7 +3,7 @@ import pytmx
 from Parameters import *
 import pygame
 from Platform import Platform
-from spriteGroups import buttons, all_sprites
+from spriteGroups import buttons
 from pathlib import Path
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
@@ -63,12 +63,15 @@ def load_level(level):
     return 2 * tileW, 9 * tileH  # координаты игрока, на всех уровнях спавнится в одном месте
 
 
-def load_font(font_size, font_type='Comic_CAT.otf'):  # Создание шрифта для текста
+# Создание шрифта для текста
+def load_font(font_size, font_type='Comic_CAT.otf'):
     font_path = Path(PATH_DATA, 'fonts', font_type)
     return pygame.font.Font(font_path, font_size)
 
 
-def printText(message, pos_x, pos_y, font_size=30, color='black', surface=screen):  # Вывод текста
+# Вывод текста
+def printText(message, pos_x, pos_y, font_size=30,
+              color='black', surface=screen):
     font = load_font(font_size=font_size)
     string_rendered = font.render(message, True, pygame.Color(color))
     intro_rect = string_rendered.get_rect()
@@ -82,7 +85,8 @@ sound1.set_volume(0.2)
 
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y, action, inactive_image, active_image=None, group=buttons, locked=False):
+    def __init__(self, pos_x, pos_y, action, inactive_image,
+                 active_image=None, group=buttons, locked=False):
         super().__init__(group)
         self.image = inactive_image.copy()
         self.active_image = active_image

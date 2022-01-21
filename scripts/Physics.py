@@ -42,10 +42,12 @@ class Point:
 
 
 class Vector:
-    def __init__(self, vector_coords: Iterable[float, float] | Iterable[Point, Point]):
+    def __init__(self, vector_coords:
+                 Iterable[float, float] | Iterable[Point, Point]):
         """
         Представляет вектор в классической декартовой координатной плоскости.
-        Если isinstance(vector_coords, Iterable), то подразумевается исходная соотнесённость с классической декартовой
+        Если isinstance(vector_coords, Iterable), то
+        подразумевается исходная соотнесённость с классической декартовой
         координатной плоскостью: vector{i, j}.
         Иначе расчет: i = конец.x - начало.x, j = конец.y - начало.y
         Iterable[0] = Point1 (начало)
